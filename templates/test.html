@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Sayfası{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4">Bu bir test sayfasıdır!</h1>
+        <p class="lead">URL yönlendirmesini kontrol ediyoruz.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">Ana Sayfaya Dön</a>
+    </div>
+</div>
+{% endblock %}

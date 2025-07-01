@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Kontrol Paneli{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Hoş Geldiniz, {{ user.username }}!</h1>
+        <p class="lead">Tüm etkinliklerinizi tek bir yerden yönetin.</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    {% if user.is_employer %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Son İş İlanlarınız</div>
+            <div class="card-body">
+                {% if user_job_postings %}
+                <ul class="list-group">
+                    {% for job_post in user_job_postings %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'job_post_detail' job_post.pk %}">{{ job_post.title }}</a>
+                        <span class="badge bg-secondary">{{ job_post.created_at|date:"d M Y" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'job_post_list' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm İlanlarınızı Gör</a>
+                {% else %}
+                <p>Henüz hiç iş ilanınız bulunmamaktadır.</p>
+                <a href="{% url 'job_post_create' %}" class="btn btn-sm btn-primary mt-3">Yeni İş İlanı Oluştur</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_customer %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Son Siparişleriniz</div>
+            <div class="card-body">
+                {% if user_orders %}
+                <ul class="list-group">
+                    {% for order in user_orders %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'order_detail' order.pk %}">Sipariş #{{ order.id }}</a>
+                        <span class="badge bg-secondary">₺{{ order.total_amount|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'order_history' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Siparişlerinizi Gör</a>
+                {% else %}
+                <p>Henüz hiç siparişiniz bulunmamaktadır.</p>
+                <a href="{% url 'product_list' %}" class="btn btn-sm btn-primary mt-3">Ürünleri Keşfet</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Son Mesajlarınız</div>
+            <div class="card-body">
+                {% if recent_messages %}
+                <ul class="list-group">
+                    {% for message in recent_messages %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'conversation' message.sender.pk %}"><strong>{{ message.sender.username }}:</strong> {{ message.content|truncatechars:40 }}</a>
+                        <small>{{ message.timestamp|date:"d M Y H:i" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'inbox' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Mesajları Gör</a>
+                {% else %}
+                <p>Henüz hiç yeni mesajınız bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Son Bildirimleriniz</div>
+            <div class="card-body">
+                {% if recent_notifications %}
+                <ul class="list-group">
+                    {% for notification in recent_notifications %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center {% if not notification.is_read %}list-group-item-info{% endif %}">
+                        <a href="{% url 'notification_list' %}">{{ notification.message|truncatechars:50 }}</a>
+                        <small>{{ notification.timestamp|date:"d M Y H:i" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'notification_list' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Bildirimleri Gör</a>
+                {% else %}
+                <p>Henüz hiç yeni bildiriminiz bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_employer and recommended_jobs %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Önerilen İş İlanları</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for job_post in recommended_jobs %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'job_post_detail' job_post.pk %}">{{ job_post.title }}</a>
+                        <small>{{ job_post.location }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_customer and recommended_products %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Önerilen Ürünler</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for product in recommended_products %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+                        <small>₺{{ product.price|floatformat:2 }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

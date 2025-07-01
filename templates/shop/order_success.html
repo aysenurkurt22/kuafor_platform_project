@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Sipariş Başarılı{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Siparişiniz Başarıyla Alındı!</div>
+            <div class="card-body">
+                <p>Siparişiniz için teşekkür ederiz. En kısa sürede işleme alınacaktır.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">Ana Sayfaya Dön</a>
+                <a href="{% url 'product_list' %}" class="btn btn-secondary">Alışverişe Devam Et</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

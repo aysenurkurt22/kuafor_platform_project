@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Konuşma - {{ other_user.username }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Konuşma: {{ other_user.username }}</h5>
+                <a href="{% url 'inbox' %}" class="btn btn-sm btn-secondary">Gelen Kutusuna Dön</a>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for message in messages %}
+                <div class="d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %} mb-2">
+                    <div class="card p-2 {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 75%;">
+                        <small class="text-muted {% if message.sender == user %}text-white-50{% endif %}">{{ message.sender.username }} - {{ message.timestamp|date:"H:i" }}</small>
+                        <p class="mb-0">{{ message.content }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <form method="post" action="{% url 'conversation' other_user.pk %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" name="content" class="form-control" placeholder="Mesajınızı yazın..." required>
+                        <button class="btn btn-primary" type="submit">Gönder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

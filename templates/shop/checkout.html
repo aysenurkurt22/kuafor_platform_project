@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Ödeme{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Ödeme</div>
+            <div class="card-body">
+                {% if cart.items.all %}
+                <h5 class="mb-3">Sipariş Özeti</h5>
+                <ul class="list-group mb-3">
+                    {% for item in cart.items.all %}
+                    <li class="list-group-item d-flex justify-content-between lh-condensed">
+                        <div>
+                            <h6 class="my-0">{{ item.product.name }}</h6>
+                            <small class="text-muted">Adet: {{ item.quantity }}</small>
+                        </div>
+                        <span class="text-muted">₺{{ item.get_total_price|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Toplam (₺)</span>
+                        <strong>₺{{ cart.get_total_price|floatformat:2 }}</strong>
+                    </li>
+                </ul>
+
+                <h5 class="mb-3">Ödeme Bilgileri (Yer Tutucu)</h5>
+                <p>Bu kısım iyzico ödeme entegrasyonu için kullanılacaktır.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg btn-block">Ödemeyi Tamamla</button>
+                </form>
+                {% else %}
+                <p>Sepetiniz boş. Ödeme yapamazsınız.</p>
+                <a href="{% url 'product_list' %}" class="btn btn-primary">Ürünleri Keşfet</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

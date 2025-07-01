@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Abonelik Ürünleri{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Abonelik Ürünleri</h1>
+        <div class="row">
+            {% for product in subscription_products %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text">{{ product.description|truncatechars:100 }}</p>
+                        <p class="card-text"><strong>Fiyat:</strong> ₺{{ product.price|floatformat:2 }} / {{ product.get_interval_display }}</p>
+                        <a href="{% url 'subscription_product_detail' product.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>Henüz hiç abonelik ürünü bulunmamaktadır.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

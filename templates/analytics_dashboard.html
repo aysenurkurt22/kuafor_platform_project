@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Analitik Paneli{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Analitik Paneli</h1>
+        <p class="lead">Platformunuzun genel durumu hakkında hızlı bir bakış.</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Toplam Kullanıcılar</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ total_users }}</h5>
+                <p class="card-text">({{ total_employers }} İşveren, {{ total_customers }} Müşteri)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Toplam İş İlanları</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ total_job_postings }}</h5>
+                <p class="card-text">Aktif ve pasif ilanlar dahil.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Toplam Ürünler</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ total_products }}</h5>
+                <p class="card-text">E-ticaret bölümündeki tüm ürünler.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-header">Toplam Siparişler</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ total_orders }}</h5>
+                <p class="card-text">Tüm siparişlerin toplam sayısı.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-header">Toplam Gelir</div>
+            <div class="card-body">
+                <h5 class="card-title">₺{{ total_revenue|floatformat:2 }}</h5>
+                <p class="card-text">Tamamlanmış siparişlerden elde edilen gelir.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

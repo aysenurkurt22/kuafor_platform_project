@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}İş İlanları{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>İş İlanları</h1>
+        {% if user.is_authenticated and user.is_employer %}
+        <p><a href="{% url 'job_post_create' %}" class="btn btn-primary">Yeni İş İlanı Oluştur</a></p>
+        {% endif %}
+        <div class="list-group">
+            {% for job_post in job_posts %}
+            {% with user_membership=job_post.employer.user_membership %}
+            <a href="{% url 'job_post_detail' job_post.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-3 {% if user_membership and user_membership.membership_plan.featured_listings %}list-group-item-danger{% elif user_membership and user_membership.membership_plan.highlight_listings %}list-group-item-warning{% endif %}">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ job_post.title }}
+                        {% if user_membership and user_membership.membership_plan.featured_listings %}
+                            <span class="badge bg-danger">Öne Çıkan</span>
+                        {% elif user_membership and user_membership.membership_plan.highlight_listings %}
+                            <span class="badge bg-warning text-dark">Vurgulanmış</span>
+                        {% endif %}
+                    </h5>
+                    <small>{{ job_post.created_at|date:"d M Y" }}</small>
+                </div>
+                <p class="mb-1">{{ job_post.description|truncatechars:150 }}</p>
+                <small><strong>Lokasyon:</strong> {{ job_post.location }} | <strong>Çalışma Türü:</strong> {{ job_post.get_employment_type_display }}</small>
+            </a>
+            {% endwith %}
+            {% empty %}
+            <p>Henüz hiç iş ilanı bulunmamaktadır.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

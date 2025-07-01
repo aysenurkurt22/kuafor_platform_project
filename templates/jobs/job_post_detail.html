@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job_post.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h1>{{ job_post.title }}</h1>
+                <small>Yayınlayan: {{ job_post.employer.username }} - {{ job_post.created_at|date:"d M Y" }}</small>
+            </div>
+            <div class="card-body">
+                <p><strong>Açıklama:</strong> {{ job_post.description }}</p>
+                <p><strong>Lokasyon:</strong> {{ job_post.location }}</p>
+                <p><strong>Maaş Beklentisi:</strong> {{ job_post.salary_expectation|default:"Belirtilmemiş" }}</p>
+                <p><strong>Çalışma Türü:</strong> {{ job_post.get_employment_type_display }}</p>
+                <p><strong>Gerekli Yetenekler:</strong> {{ job_post.skills_required }}</p>
+                <a href="{% url 'job_post_list' %}" class="btn btn-secondary">Tüm İş İlanları</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

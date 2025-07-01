@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h1>{{ lesson.title }}</h1>
+                <small>Kurs: <a href="{% url 'course_detail' course.pk %}">{{ course.title }}</a></small>
+            </div>
+            <div class="card-body">
+                <div class="lesson-content mb-4">
+                    {{ lesson.content|safe }}
+                </div>
+                {% if lesson.video_url %}
+                <div class="ratio ratio-16x9 mb-4">
+                    <iframe src="{{ lesson.video_url }}" title="{{ lesson.title }}" allowfullscreen></iframe>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    {% if lesson.get_previous_by_order %}
+                    <a href="{% url 'lesson_detail' course.pk lesson.get_previous_by_order.pk %}" class="btn btn-outline-primary">&larr; Önceki Ders</a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+
+                    {% if lesson.get_next_by_order %}
+                    <a href="{% url 'lesson_detail' course.pk lesson.get_next_by_order.pk %}" class="btn btn-outline-primary">Sonraki Ders &rarr;</a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+                </div>
+
+                <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary mt-3">Kursa Geri Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

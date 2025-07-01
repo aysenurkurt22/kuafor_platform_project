@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Üyelik Satın Al{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">{{ plan.membership_type }} Üyeliği Satın Al</div>
+            <div class="card-body">
+                <h5 class="card-title">Fiyat: ₺{{ plan.price|floatformat:2 }} / ay</h5>
+                <p class="card-text">Bu üyelik ile şunlara sahip olacaksınız:</p>
+                <ul class="list-unstyled">
+                    <li>{{ plan.max_job_postings }} ilan/ay</li>
+                    {% if plan.highlight_listings %}
+                    <li>İlanları Vurgula</li>
+                    {% endif %}
+                    {% if plan.featured_listings %}
+                    <li>Öne Çıkan İlanlar</li>
+                    {% endif %}
+                    {% if plan.cv_pool_access %}
+                    <li>CV Havuzuna Erişim</li>
+                    {% endif %}
+                    {% if plan.analytics_access %}
+                    <li>Analitik Paneli</li>
+                    {% endif %}
+                </ul>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg btn-block">Şimdi Satın Al</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

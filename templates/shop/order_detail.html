@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Sipariş Detayı #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h1>Sipariş Detayı #{{ order.id }}</h1>
+            </div>
+            <div class="card-body">
+                <p><strong>Sipariş Tarihi:</strong> {{ order.order_date|date:"d M Y H:i" }}</p>
+                <p><strong>Toplam Tutar:</strong> ₺{{ order.total_amount|floatformat:2 }}</p>
+                <p><strong>Durum:</strong> {{ order.get_status_display }}</p>
+                {% if order.tracking_number %}
+                <p><strong>Takip Numarası:</strong> {{ order.tracking_number }}</p>
+                {% endif %}
+                {% if order.shipping_address %}
+                <p><strong>Kargo Adresi:</strong> {{ order.shipping_address|linebreaksbr }}</p>
+                {% endif %}
+
+                <h5 class="mt-4">Sipariş Edilen Ürünler:</h5>
+                <ul class="list-group mb-3">
+                    {% for item in order.items.all %}
+                    <li class="list-group-item d-flex justify-content-between lh-condensed">
+                        <div>
+                            <h6 class="my-0">{{ item.product.name }}</h6>
+                            <small class="text-muted">Adet: {{ item.quantity }} x ₺{{ item.price|floatformat:2 }}</small>
+                        </div>
+                        <span class="text-muted">₺{{ item.get_total_price|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'order_history' %}" class="btn btn-secondary">Sipariş Geçmişine Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
