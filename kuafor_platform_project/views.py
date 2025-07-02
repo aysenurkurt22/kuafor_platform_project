@@ -5,8 +5,9 @@ from jobs.models import JobPosting
 from shop.models import Product, Order, Cart, CartItem, ProductCategory, Review, Wishlist, SubscriptionProduct
 from messaging.models import Message
 from notifications.models import Notification
+from education.models import Course, Enrollment
 from django.db import transaction
-from kuafor_platform_project.utils import send_order_confirmation_email
+from kuafor_platform_project.utils import send_order_confirmation_email, award_referral_bonus
 from django.forms import formset_factory
 from shop.forms import CartItemForm, ReviewForm
 from django.db.models import Q, Case, When, Count, Sum
@@ -18,8 +19,20 @@ def home(request):
     recently_viewed_product_ids = request.session.get('recently_viewed_products', [])
     recently_viewed_products = Product.objects.filter(id__in=recently_viewed_product_ids)
     # Sırayı korumak için manuel sıralama
-    preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recently_viewed_product_ids)])
-    recently_viewed_products = recently_viewed_products.order_by(preserved)
+    preserved_products = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recently_viewed_product_ids)])
+    recently_viewed_products = recently_viewed_products.order_by(preserved_products)
+
+    recently_viewed_job_ids = request.session.get('recently_viewed_jobs', [])
+    recently_viewed_jobs = JobPosting.objects.filter(id__in=recently_viewed_job_ids)
+    # Sırayı korumak için manuel sıralama
+    preserved_jobs = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recently_viewed_job_ids)])
+    recently_viewed_jobs = recently_viewed_jobs.order_by(preserved_jobs)
+
+    # Öne Çıkan İş İlanları (Featured listings)
+    featured_jobs = JobPosting.objects.filter(employer__user_membership__membership_plan__featured_listings=True, is_active=True).order_by('-created_at')[:3]
+
+    # Popüler Ürünler (En çok satanlar veya en çok görüntülenenler olabilir, şimdilik en yeniler)
+    popular_products = Product.objects.all().order_by('-created_at')[:3]
 
     unread_notifications_count = 0
     if request.user.is_authenticated:
@@ -27,6 +40,9 @@ def home(request):
 
     context = {
         'recently_viewed_products': recently_viewed_products,
+        'recently_viewed_jobs': recently_viewed_jobs,
+        'featured_jobs': featured_jobs,
+        'popular_products': popular_products,
         'unread_notifications_count': unread_notifications_count,
     }
     return render(request, 'home.html', context)
@@ -45,6 +61,10 @@ def analytics_dashboard(request):
     total_orders = Order.objects.count()
     total_revenue = sum(order.total_amount for order in Order.objects.filter(is_completed=True)) # Sadece tamamlanmış siparişlerden gelir
 
+    # Aylık Kullanıcı Kayıtları
+    monthly_registrations = CustomUser.objects.annotate(month=TruncMonth('date_joined')).values('month').annotate(count=Count('id')).order_by('month')
+    monthly_registrations_data = [{'month': item['month'].strftime('%Y-%m'), 'count': item['count']} for item in monthly_registrations]
+
     # Aylık İş İlanı Trendleri
     job_posting_trends = JobPosting.objects.annotate(month=TruncMonth('created_at')).values('month').annotate(count=Count('id')).order_by('month')
     job_posting_data = [{'month': item['month'].strftime('%Y-%m'), 'count': item['count']} for item in job_posting_trends]
@@ -56,6 +76,18 @@ def analytics_dashboard(request):
     # En Çok Satan Ürünler (İlk 5)
     top_selling_products = OrderItem.objects.values('product__name').annotate(total_quantity=Sum('quantity')).order_by('-total_quantity')[:5]
 
+    # En Popüler İş Kategorileri (İlan Sayısına Göre)
+    popular_job_categories = JobPosting.objects.values('location').annotate(count=Count('id')).order_by('-count')[:5] # Lokasyonu kategori gibi kullanıyoruz
+
+    # En Popüler Ürün Kategorileri (Ürün Sayısına Göre)
+    popular_product_categories = ProductCategory.objects.annotate(product_count=Count('products')).order_by('-product_count')[:5]
+
+    # Üyelik Planlarına Göre Aktif Üye Sayısı
+    active_memberships_by_plan = CustomUser.objects.filter(user_membership__is_active=True).values('user_membership__membership_plan__membership_type').annotate(count=Count('id')).order_by('user_membership__membership_plan__membership_type')
+
+    # Kurslara Kayıtlı Kullanıcı Sayısı
+    enrollments_by_course = Course.objects.annotate(enrolled_count=Count('enrollments')).order_by('-enrolled_count')[:5]
+
     context = {
         'total_users': total_users,
         'total_employers': total_employers,
@@ -64,9 +96,14 @@ def analytics_dashboard(request):
         'total_products': total_products,
         'total_orders': total_orders,
         'total_revenue': total_revenue,
+        'monthly_registrations_data': monthly_registrations_data,
         'job_posting_data': job_posting_data,
         'order_data': order_data,
         'top_selling_products': top_selling_products,
+        'popular_job_categories': popular_job_categories,
+        'popular_product_categories': popular_product_categories,
+        'active_memberships_by_plan': active_memberships_by_plan,
+        'enrollments_by_course': enrollments_by_course,
     }
     return render(request, 'analytics_dashboard.html', context)
 
@@ -92,6 +129,12 @@ def product_detail(request, pk):
     request.session['recently_viewed_products'] = recently_viewed[:5] # Sadece son 5 ürünü sakla
     request.session.modified = True
 
+    # Üyelik indirimi hesapla
+    discounted_price = product.price
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        discounted_price = product.price * (1 - discount_percentage / 100)
+
     # Yorumlar
     reviews = product.reviews.all()
     if request.method == 'POST':
@@ -109,12 +152,18 @@ def product_detail(request, pk):
     else:
         review_form = ReviewForm()
 
-    return render(request, 'shop/product_detail.html', {'product': product, 'reviews': reviews, 'review_form': review_form})
+    return render(request, 'shop/product_detail.html', {'product': product, 'reviews': reviews, 'review_form': review_form, 'discounted_price': discounted_price})
 
 @login_required
 def add_to_cart(request, pk):
     product = get_object_or_404(Product, pk=pk)
     quantity = int(request.POST.get('quantity', 1)) # Miktar alınıyor
+
+    # Üyelik indirimi hesapla
+    price_at_purchase = product.price
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        price_at_purchase = product.price * (1 - discount_percentage / 100)
 
     cart, created = Cart.objects.get_or_create(user=request.user)
     cart_item, item_created = CartItem.objects.get_or_create(cart=cart, product=product)
@@ -122,6 +171,7 @@ def add_to_cart(request, pk):
         cart_item.quantity += quantity # Mevcutsa miktarı artır
     else:
         cart_item.quantity = quantity # Yeni ekleniyorsa miktarı ayarla
+    cart_item.price = price_at_purchase # İndirimli fiyatı kaydet
     cart_item.save()
     return redirect('cart_detail')
 
@@ -132,6 +182,7 @@ def update_cart_item(request, pk):
         quantity = int(request.POST.get('quantity', 1))
         if quantity > 0:
             cart_item.quantity = quantity
+            # Miktar güncellendiğinde fiyatı tekrar hesaplamaya gerek yok, çünkü price_at_purchase zaten kaydedildi
             cart_item.save()
         else:
             cart_item.delete() # Miktar 0 veya daha az ise sil
@@ -146,18 +197,36 @@ def remove_from_cart(request, pk):
 @login_required
 def cart_detail(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-    return render(request, 'shop/cart_detail.html', {'cart': cart})
+    total_discount = 0
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        for item in cart.items.all():
+            if item.product: # Sadece normal ürünler için indirim
+                original_price = item.product.price
+                discounted_price = original_price * (1 - discount_percentage / 100)
+                total_discount += (original_price - discounted_price) * item.quantity
+
+    return render(request, 'shop/cart_detail.html', {'cart': cart, 'total_discount': total_discount})
 
 @login_required
 def checkout(request):
     cart = get_object_or_404(Cart, user=request.user)
+    total_discount = 0
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        for item in cart.items.all():
+            if item.product: # Sadece normal ürünler için indirim
+                original_price = item.product.price
+                discounted_price = original_price * (1 - discount_percentage / 100)
+                total_discount += (original_price - discounted_price) * item.quantity
+
     if request.method == 'POST':
         if cart.items.exists():
             with transaction.atomic():
                 # Ödeme başarılı varsayımıyla sipariş oluştur
                 order = Order.objects.create(
                     customer=request.user,
-                    total_amount=cart.get_total_price(),
+                    total_amount=cart.get_total_price() - total_discount, # İndirimi düş
                     # shipping_address = request.POST.get('shipping_address', '') # Adres formu eklendiğinde kullanılacak
                 )
                 for item in cart.items.all():
@@ -167,7 +236,7 @@ def checkout(request):
                             order=order,
                             product=item.product,
                             quantity=item.quantity,
-                            price=item.product.price
+                            price=item.price # CartItem'daki indirimli fiyatı kullan
                         )
                         item.product.stock -= item.quantity
                         item.product.save()
@@ -176,8 +245,14 @@ def checkout(request):
                             order=order,
                             subscription_product=item.subscription_product,
                             quantity=item.quantity,
-                            price=item.subscription_product.price
+                            price=item.price # CartItem'daki fiyatı kullan
                         )
+                # Sadakat puanı kazandır
+                loyalty_points_earned = int(order.total_amount / 10) # Her 10 TL için 1 puan
+                request.user.loyalty_points += loyalty_points_earned
+                request.user.save()
+                messages.success(request, f'Siparişiniz için {loyalty_points_earned} sadakat puanı kazandınız!')
+
                 cart.items.all().delete() # Sepeti boşalt
             send_order_confirmation_email(request.user.email, order.id, order.total_amount) # Sipariş onayı e-postası
             # Bildirim oluştur
@@ -187,12 +262,15 @@ def checkout(request):
                 notification_type='ORDER_UPDATE',
                 related_object_id=order.id
             )
-            # Burada iyzico ödeme entegrasyonu için yer tutucu olacak
-            # Şimdilik başarılı bir ödeme gibi davranıyoruz
-            return redirect('order_success') # Başarılı ödeme sonrası yönlendirme
+            # Iyzico ödeme başlatma (yer tutucu)
+            # Gerçek entegrasyonda, burada Iyzico API'sine ödeme isteği gönderilir
+            # ve kullanıcı Iyzico ödeme sayfasına yönlendirilir.
+            # Örnek olarak, Iyzico'ya yönlendirme URL'sini oluşturup kullanıcıyı oraya gönderiyoruz.
+            iyzico_payment_url = f"{settings.IYZICO_BASE_URL}/payment/auth?conversationId={order.id}" # Örnek URL
+            return redirect(iyzico_payment_url)
         else:
             return redirect('cart_detail') # Sepet boşsa sepete geri dön
-    return render(request, 'shop/checkout.html', {'cart': cart})
+    return render(request, 'shop/checkout.html', {'cart': cart, 'total_discount': total_discount})
 
 def order_success(request):
     return render(request, 'shop/order_success.html')
@@ -279,6 +357,28 @@ def add_subscription_to_cart(request, pk):
         cart_item.quantity += quantity
     else:
         cart_item.quantity = quantity
+    cart_item.price = subscription_product.price # Abonelik ürününün fiyatını kaydet
     cart_item.save()
     messages.success(request, f'{subscription_product.name} sepete eklendi!')
     return redirect('cart_detail')
+
+def iyzico_callback(request):
+    # Iyzico'dan gelen geri bildirimleri işleme
+    # Bu kısım, Iyzico'nun ödeme tamamlandıktan sonra yönlendirdiği URL olacaktır.
+    # Genellikle, Iyzico'dan gelen POST verilerini doğrulamak ve sipariş durumunu güncellemek gerekir.
+    # Şimdilik basit bir başarı/hata mesajı gösteriyoruz.
+    if request.method == 'POST':
+        # Örnek: Iyzico'dan gelen verileri logla
+        print("Iyzico Callback Data:", request.POST)
+        # Gerçek entegrasyonda, burada Iyzico API'si ile ödeme durumunu sorgulayabiliriz.
+        # Örneğin, paymentId veya conversationId kullanarak.
+        # if payment_successful:
+        #     order = Order.objects.get(id=conversationId)
+        #     order.status = 'PROCESSING'
+        #     order.is_completed = True
+        #     order.save()
+        messages.success(request, 'Ödeme işlemi Iyzico tarafından başarıyla tamamlandı!')
+        return redirect('order_success')
+    else:
+        messages.error(request, 'Ödeme işlemi sırasında bir hata oluştu veya iptal edildi.')
+        return redirect('cart_detail')

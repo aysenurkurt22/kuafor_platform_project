@@ -1,5 +1,6 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from notifications.models import Notification # Notification import edildi
 
 def send_welcome_email(user_email, username):
     subject = 'Kuaför Kariyer & E-Commerce Platformuna Hoş Geldiniz!'
@@ -15,3 +16,14 @@ def send_order_confirmation_email(user_email, order_id, total_amount):
     recipient_list = [user_email]
     send_mail(subject, message, from_email, recipient_list, fail_silently=False)
 
+def award_referral_bonus(referrer_user):
+    # Referans verene 100 sadakat puanı bonus ver
+    referrer_user.loyalty_points += 100
+    referrer_user.save()
+    # Bildirim oluştur
+    Notification.objects.create(
+        user=referrer_user,
+        message=f'Tebrikler! Yeni bir kullanıcı davet ettiniz ve 100 sadakat puanı kazandınız.',
+        notification_type='OTHER',
+        related_object_id=referrer_user.id
+    )

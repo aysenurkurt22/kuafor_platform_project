@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
+    <div class="col-12 col-md-10">
         <div class="card">
             <div class="card-header">Sipariş Geçmişim</div>
             <div class="card-body">
@@ -12,7 +12,7 @@
                 <div class="list-group">
                     {% for order in orders %}
                     <a href="{% url 'order_detail' order.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-3">
-                        <div class="d-flex w-100 justify-content-between">
+                        <div class="d-flex w-100 justify-content-between flex-wrap"> {# Added flex-wrap #}
                             <h5 class="mb-1">Sipariş #{{ order.id }}</h5>
                             <small>{{ order.order_date|date:"d M Y H:i" }}</small>
                         </div>

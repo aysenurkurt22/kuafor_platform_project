@@ -9,8 +9,22 @@
     <!-- Custom CSS -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
 </head>
 <body>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{% static 'service-worker.js' %}')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container">
@@ -57,6 +71,26 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'notification_list' %}">Notifications {% if unread_notifications_count %}<span class="badge bg-danger">{{ unread_notifications_count }}</span>{% endif %}</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'contact_us' %}">Contact Us</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_authenticated and user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'analytics_dashboard' %}">Analytics</a>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
         </nav>
@@ -68,8 +102,13 @@
     </main>
 
     <footer>
-        <div class="container">
+        <div class="container text-center">
             <p>&copy; 2025 Kuaför Kariyer & E-Commerce. All rights reserved.</p>
+            <p>
+                <a href="{% url 'about_us' %}" class="text-muted me-3">Hakkımızda</a>
+                <a href="{% url 'terms_of_service' %}" class="text-muted me-3">Hizmet Şartları</a>
+                <a href="{% url 'privacy_policy' %}" class="text-muted">Gizlilik Politikası</a>
+            </p>
         </div>
     </footer>
 

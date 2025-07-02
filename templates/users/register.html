@@ -4,13 +4,17 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-12 col-md-6">
         <div class="card">
             <div class="card-header">Kayıt Ol</div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
+                    <div class="mb-3">
+                        <label for="id_referral_code" class="form-label">Referans Kodu (İsteğe Bağlı)</label>
+                        <input type="text" name="ref" id="id_referral_code" class="form-control">
+                    </div>
                     <button type="submit" class="btn btn-primary">Kayıt Ol</button>
                 </form>
             </div>

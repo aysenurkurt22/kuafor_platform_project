@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h1>Sipariş Detayı #{{ order.id }}</h1>
@@ -23,9 +23,9 @@
                 <h5 class="mt-4">Sipariş Edilen Ürünler:</h5>
                 <ul class="list-group mb-3">
                     {% for item in order.items.all %}
-                    <li class="list-group-item d-flex justify-content-between lh-condensed">
+                    <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap"> {# Added flex-wrap #}
                         <div>
-                            <h6 class="my-0">{{ item.product.name }}</h6>
+                            <h6 class="my-0">{% if item.product %}{{ item.product.name }}{% elif item.subscription_product %}{{ item.subscription_product.name }}{% endif %}</h6>
                             <small class="text-muted">Adet: {{ item.quantity }} x ₺{{ item.price|floatformat:2 }}</small>
                         </div>
                         <span class="text-muted">₺{{ item.get_total_price|floatformat:2 }}</span>

@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Konuşma: {{ other_user.username }}</h5>
-                <a href="{% url 'inbox' %}" class="btn btn-sm btn-secondary">Gelen Kutusuna Dön</a>
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h5 class="my-0">Konuşma: {{ other_user.username }}</h5>
+                <a href="{% url 'inbox' %}" class="btn btn-sm btn-secondary mt-2 mt-md-0">Gelen Kutusuna Dön</a>
             </div>
             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                 {% for message in messages %}

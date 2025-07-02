@@ -4,43 +4,49 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h1>{{ course.title }}</h1>
                 <small>Eğitmen: {{ course.instructor.username|default:"Belirtilmemiş" }}</small>
             </div>
             <div class="card-body">
-                {% if course.thumbnail %}
-                <img src="{{ course.thumbnail.url }}" class="img-fluid mb-3" alt="{{ course.title }}">
-                {% endif %}
-                <p><strong>Açıklama:</strong> {{ course.description }}</p>
-                <p><strong>Fiyat:</strong> {% if course.price > 0 %}₺{{ course.price|floatformat:2 }}{% else %}Ücretsiz{% endif %}</p>
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3 mb-md-0">
+                        {% if course.thumbnail %}
+                        <img src="{{ course.thumbnail.url }}" class="img-fluid rounded" alt="{{ course.title }}">
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <p><strong>Açıklama:</strong> {{ course.description }}</p>
+                        <p><strong>Fiyat:</strong> {% if course.price > 0 %}₺{{ course.price|floatformat:2 }}{% else %}Ücretsiz{% endif %}</p>
 
-                {% if user.is_authenticated %}
-                    {% if is_enrolled %}
-                        <p class="alert alert-success">Bu kursa kayıtlısınız.</p>
-                        <h5 class="mt-4">Dersler:</h5>
-                        <ul class="list-group mb-3">
-                            {% for lesson in lessons %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <a href="{% url 'lesson_detail' course.pk lesson.pk %}">{{ lesson.order }}. {{ lesson.title }}</a>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <form action="{% url 'enroll_course' course.pk %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Kursa Kayıt Ol</button>
-                        </form>
-                    {% endif %}
-                {% else %}
-                    <p class="alert alert-info">Dersleri görüntülemek için giriş yapmanız veya kayıt olmanız gerekmektedir.</p>
-                    <a href="{% url 'login' %}" class="btn btn-primary">Giriş Yap</a>
-                    <a href="{% url 'register' %}" class="btn btn-secondary">Kayıt Ol</a>
-                {% endif %}
+                        {% if user.is_authenticated %}
+                            {% if is_enrolled %}
+                                <p class="alert alert-success">Bu kursa kayıtlısınız.</p>
+                                <h5 class="mt-4">Dersler:</h5>
+                                <ul class="list-group mb-3">
+                                    {% for lesson in lessons %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{% url 'lesson_detail' course.pk lesson.pk %}">{{ lesson.order }}. {{ lesson.title }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <form action="{% url 'enroll_course' course.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary">Kursa Kayıt Ol</button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <p class="alert alert-info">Dersleri görüntülemek için giriş yapmanız veya kayıt olmanız gerekmektedir.</p>
+                            <a href="{% url 'login' %}" class="btn btn-primary">Giriş Yap</a>
+                            <a href="{% url 'register' %}" class="btn btn-secondary">Kayıt Ol</a>
+                        {% endif %}
 
-                <a href="{% url 'course_list' %}" class="btn btn-secondary mt-3">Tüm Kurslar</a>
+                        <a href="{% url 'course_list' %}" class="btn btn-secondary mt-3">Tüm Kurslar</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

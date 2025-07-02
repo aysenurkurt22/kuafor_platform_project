@@ -4,23 +4,29 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h1>{{ subscription_product.name }}</h1>
             </div>
             <div class="card-body">
-                {% if subscription_product.image %}
-                <img src="{{ subscription_product.image.url }}" class="img-fluid mb-3" alt="{{ subscription_product.name }}">
-                {% endif %}
-                <p><strong>Açıklama:</strong> {{ subscription_product.description }}</p>
-                <p><strong>Fiyat:</strong> ₺{{ subscription_product.price|floatformat:2 }} / {{ subscription_product.get_interval_display }}</p>
-                <form action="{% url 'add_subscription_to_cart' subscription_product.pk %}" method="post" class="d-flex align-items-center">
-                    {% csrf_token %}
-                    <input type="number" name="quantity" value="1" min="1" class="form-control me-2" style="width: 80px;">
-                    <button type="submit" class="btn btn-success">Sepete Ekle</button>
-                </form>
-                <a href="{% url 'subscription_product_list' %}" class="btn btn-secondary mt-3">Tüm Abonelik Ürünleri</a>
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3 mb-md-0">
+                        {% if subscription_product.image %}
+                        <img src="{{ subscription_product.image.url }}" class="img-fluid rounded" alt="{{ subscription_product.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <p><strong>Açıklama:</strong> {{ subscription_product.description }}</p>
+                        <p><strong>Fiyat:</strong> ₺{{ subscription_product.price|floatformat:2 }} / {{ subscription_product.get_interval_display }}</p>
+                        <form action="{% url 'add_subscription_to_cart' subscription_product.pk %}" method="post" class="d-flex align-items-center mt-3">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="1" min="1" class="form-control me-2" style="width: 80px;">
+                            <button type="submit" class="btn btn-success">Sepete Ekle</button>
+                        </form>
+                        <a href="{% url 'subscription_product_list' %}" class="btn btn-secondary mt-3">Tüm Abonelik Ürünleri</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

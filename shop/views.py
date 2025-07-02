@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from users.models import CustomUser
-from jobs.models import JobPosting
-from shop.models import Product, Order, Cart, CartItem, ProductCategory, Review, Wishlist, SubscriptionProduct
+from .models import Product, Cart, CartItem, Order, OrderItem, ProductCategory, Review, Wishlist, SubscriptionProduct
 from django.db import transaction
 from kuafor_platform_project.utils import send_order_confirmation_email
 from django.forms import formset_factory
@@ -10,6 +8,10 @@ from shop.forms import CartItemForm, ReviewForm
 from django.db.models import Q, Case, When
 from notifications.models import Notification
 from django.contrib import messages
+from django.conf import settings
+import requests
+import json
+from users.models import CustomUser # CustomUser import edildi
 
 def home(request):
     recently_viewed_product_ids = request.session.get('recently_viewed_products', [])
@@ -75,6 +77,22 @@ def product_detail(request, pk):
     request.session['recently_viewed_products'] = recently_viewed[:5] # Sadece son 5 ürünü sakla
     request.session.modified = True
 
+    # Kullanıcının tercih edilen ürün kategorilerini güncelle
+    if request.user.is_authenticated and product.category:
+        user = request.user
+        current_categories = set(user.preferred_product_categories.split(',')) if user.preferred_product_categories else set()
+        new_category = product.category.name.strip()
+        if new_category and new_category not in current_categories:
+            current_categories.add(new_category)
+            user.preferred_product_categories = ', '.join(sorted(list(current_categories)))
+            user.save()
+
+    # Üyelik indirimi hesapla
+    discounted_price = product.price
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        discounted_price = product.price * (1 - discount_percentage / 100)
+
     # Yorumlar
     reviews = product.reviews.all()
     if request.method == 'POST':
@@ -92,12 +110,18 @@ def product_detail(request, pk):
     else:
         review_form = ReviewForm()
 
-    return render(request, 'shop/product_detail.html', {'product': product, 'reviews': reviews, 'review_form': review_form})
+    return render(request, 'shop/product_detail.html', {'product': product, 'reviews': reviews, 'review_form': review_form, 'discounted_price': discounted_price})
 
 @login_required
 def add_to_cart(request, pk):
     product = get_object_or_404(Product, pk=pk)
     quantity = int(request.POST.get('quantity', 1)) # Miktar alınıyor
+
+    # Üyelik indirimi hesapla
+    price_at_purchase = product.price
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        price_at_purchase = product.price * (1 - discount_percentage / 100)
 
     cart, created = Cart.objects.get_or_create(user=request.user)
     cart_item, item_created = CartItem.objects.get_or_create(cart=cart, product=product)
@@ -105,6 +129,7 @@ def add_to_cart(request, pk):
         cart_item.quantity += quantity # Mevcutsa miktarı artır
     else:
         cart_item.quantity = quantity # Yeni ekleniyorsa miktarı ayarla
+    cart_item.price = price_at_purchase # İndirimli fiyatı kaydet
     cart_item.save()
     return redirect('cart_detail')
 
@@ -115,6 +140,7 @@ def update_cart_item(request, pk):
         quantity = int(request.POST.get('quantity', 1))
         if quantity > 0:
             cart_item.quantity = quantity
+            # Miktar güncellendiğinde fiyatı tekrar hesaplamaya gerek yok, çünkü price_at_purchase zaten kaydedildi
             cart_item.save()
         else:
             cart_item.delete() # Miktar 0 veya daha az ise sil
@@ -129,18 +155,49 @@ def remove_from_cart(request, pk):
 @login_required
 def cart_detail(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-    return render(request, 'shop/cart_detail.html', {'cart': cart})
+    total_discount = 0
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        for item in cart.items.all():
+            if item.product: # Sadece normal ürünler için indirim
+                original_price = item.product.price
+                discounted_price = original_price * (1 - discount_percentage / 100)
+                total_discount += (original_price - discounted_price) * item.quantity
+
+    return render(request, 'shop/cart_detail.html', {'cart': cart, 'total_discount': total_discount})
 
 @login_required
 def checkout(request):
     cart = get_object_or_404(Cart, user=request.user)
+    total_discount = 0
+    if request.user.is_authenticated and request.user.user_membership and request.user.user_membership.is_active:
+        discount_percentage = request.user.user_membership.membership_plan.product_discount_percentage
+        for item in cart.items.all():
+            if item.product: # Sadece normal ürünler için indirim
+                original_price = item.product.price
+                discounted_price = original_price * (1 - discount_percentage / 100)
+                total_discount += (original_price - discounted_price) * item.quantity
+
+    # Sadakat puanı kullanımı
+    loyalty_points_applied = 0
+    loyalty_discount_amount = 0
+    if request.method == 'POST' and 'use_loyalty_points' in request.POST and request.user.loyalty_points > 0:
+        # Her 100 puan için 1 TL indirim varsayalım
+        points_to_use = request.user.loyalty_points
+        loyalty_discount_amount = min(points_to_use / 100, (cart.get_total_price() - total_discount)) # Toplam tutarı aşmasın
+        loyalty_points_applied = int(loyalty_discount_amount * 100)
+        messages.info(request, f'{loyalty_points_applied} sadakat puanı kullanıldı ve ₺{loyalty_discount_amount|floatformat:2} indirim uygulandı.')
+
     if request.method == 'POST':
         if cart.items.exists():
             with transaction.atomic():
-                # Ödeme başarılı varsayımıyla sipariş oluştur
+                final_total_amount = cart.get_total_price() - total_discount - loyalty_discount_amount
+                if final_total_amount < 0: # Negatif olmaması için kontrol
+                    final_total_amount = 0
+
                 order = Order.objects.create(
                     customer=request.user,
-                    total_amount=cart.get_total_price(),
+                    total_amount=final_total_amount,
                     # shipping_address = request.POST.get('shipping_address', '') # Adres formu eklendiğinde kullanılacak
                 )
                 for item in cart.items.all():
@@ -150,7 +207,7 @@ def checkout(request):
                             order=order,
                             product=item.product,
                             quantity=item.quantity,
-                            price=item.product.price
+                            price=item.price # CartItem'daki indirimli fiyatı kullan
                         )
                         item.product.stock -= item.quantity
                         item.product.save()
@@ -159,8 +216,17 @@ def checkout(request):
                             order=order,
                             subscription_product=item.subscription_product,
                             quantity=item.quantity,
-                            price=item.subscription_product.price
+                            price=item.price # CartItem'daki fiyatı kullan
                         )
+                # Sadakat puanı kazandır
+                loyalty_points_earned = int(order.total_amount / 10) # Her 10 TL için 1 puan
+                request.user.loyalty_points += loyalty_points_earned
+                
+                # Kullanılan sadakat puanlarını düş
+                request.user.loyalty_points -= loyalty_points_applied
+                request.user.save()
+                messages.success(request, f'Siparişiniz için {loyalty_points_earned} sadakat puanı kazandınız!')
+
                 cart.items.all().delete() # Sepeti boşalt
             send_order_confirmation_email(request.user.email, order.id, order.total_amount) # Sipariş onayı e-postası
             # Bildirim oluştur
@@ -170,12 +236,12 @@ def checkout(request):
                 notification_type='ORDER_UPDATE',
                 related_object_id=order.id
             )
-            # Burada iyzico ödeme entegrasyonu için yer tutucu olacak
-            # Şimdilik başarılı bir ödeme gibi davranıyoruz
-            return redirect('order_success') # Başarılı ��deme sonrası yönlendirme
+            # Iyzico ödeme başlatma (yer tutucu)
+            iyzico_payment_url = f"{settings.IYZICO_BASE_URL}/payment/auth?conversationId={order.id}" # Örnek URL
+            return redirect(iyzico_payment_url)
         else:
             return redirect('cart_detail') # Sepet boşsa sepete geri dön
-    return render(request, 'shop/checkout.html', {'cart': cart})
+    return render(request, 'shop/checkout.html', {'cart': cart, 'total_discount': total_discount, 'loyalty_discount_amount': loyalty_discount_amount})
 
 def order_success(request):
     return render(request, 'shop/order_success.html')
@@ -262,6 +328,28 @@ def add_subscription_to_cart(request, pk):
         cart_item.quantity += quantity
     else:
         cart_item.quantity = quantity
+    cart_item.price = subscription_product.price # Abonelik ürününün fiyatını kaydet
     cart_item.save()
     messages.success(request, f'{subscription_product.name} sepete eklendi!')
     return redirect('cart_detail')
+
+def iyzico_callback(request):
+    # Iyzico'dan gelen geri bildirimleri işleme
+    # Bu kısım, Iyzico'nun ödeme tamamlandıktan sonra yönlendirdiği URL olacaktır.
+    # Genellikle, Iyzico'dan gelen POST verilerini doğrulamak ve sipariş durumunu güncellemek gerekir.
+    # Şimdilik basit bir başarı/hata mesajı gösteriyoruz.
+    if request.method == 'POST':
+        # Örnek: Iyzico'dan gelen verileri logla
+        print("Iyzico Callback Data:", request.POST)
+        # Gerçek entegrasyonda, burada Iyzico API'si ile ödeme durumunu sorgulayabiliriz.
+        # Örneğin, paymentId veya conversationId kullanarak.
+        # if payment_successful:
+        #     order = Order.objects.get(id=conversationId)
+        #     order.status = 'PROCESSING'
+        #     order.is_completed = True
+        #     order.save()
+        messages.success(request, 'Ödeme işlemi Iyzico tarafından başarıyla tamamlandı!')
+        return redirect('order_success')
+    else:
+        messages.error(request, 'Ödeme işlemi sırasında bir hata oluştu veya iptal edildi.')
+        return redirect('cart_detail')

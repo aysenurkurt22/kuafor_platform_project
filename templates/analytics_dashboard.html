@@ -57,4 +57,151 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Aylık Kullanıcı Kayıtları</div>
+            <div class="card-body">
+                {% if monthly_registrations_data %}
+                <ul class="list-group list-group-flush">
+                    {% for data in monthly_registrations_data %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ data.month }}: <span class="badge bg-primary rounded-pill">{{ data.count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Kayıt verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Aylık İş İlanı Trendleri</div>
+            <div class="card-body">
+                {% if job_posting_data %}
+                <ul class="list-group list-group-flush">
+                    {% for data in job_posting_data %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ data.month }}: <span class="badge bg-success rounded-pill">{{ data.count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>İş ilanı trend verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Aylık Sipariş ve Gelir Trendleri</div>
+            <div class="card-body">
+                {% if order_data %}
+                <ul class="list-group list-group-flush">
+                    {% for data in order_data %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ data.month }}: Sipariş: <span class="badge bg-warning text-dark rounded-pill">{{ data.count }}</span>, Gelir: <span class="badge bg-danger rounded-pill">₺{{ data.revenue|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Sipariş ve gelir trend verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">En Çok Satan Ürünler</div>
+            <div class="card-body">
+                {% if top_selling_products %}
+                <ul class="list-group list-group-flush">
+                    {% for product in top_selling_products %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ product.product__name }}: <span class="badge bg-info rounded-pill">{{ product.total_quantity }} adet</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>En çok satan ürün verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">En Popüler İş Kategorileri</div>
+            <div class="card-body">
+                {% if popular_job_categories %}
+                <ul class="list-group list-group-flush">
+                    {% for category in popular_job_categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ category.location }}: <span class="badge bg-primary rounded-pill">{{ category.count }} ilan</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Popüler iş kategorisi verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">En Popüler Ürün Kategorileri</div>
+            <div class="card-body">
+                {% if popular_product_categories %}
+                <ul class="list-group list-group-flush">
+                    {% for category in popular_product_categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ category.name }}: <span class="badge bg-success rounded-pill">{{ category.product_count }} ürün</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Popüler ürün kategorisi verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Üyelik Planlarına Göre Aktif Üyeler</div>
+            <div class="card-body">
+                {% if active_memberships_by_plan %}
+                <ul class="list-group list-group-flush">
+                    {% for plan in active_memberships_by_plan %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ plan.user_membership__membership_plan__membership_type }}: <span class="badge bg-info rounded-pill">{{ plan.count }} üye</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Aktif üyelik verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Kurslara Kayıtlı Kullanıcı Sayısı</div>
+            <div class="card-body">
+                {% if enrollments_by_course %}
+                <ul class="list-group list-group-flush">
+                    {% for course in enrollments_by_course %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ course.title }}: <span class="badge bg-warning text-dark rounded-pill">{{ course.enrolled_count }} kayıt</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Kurs kayıt verisi bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

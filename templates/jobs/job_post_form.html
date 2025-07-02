@@ -4,10 +4,19 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">İş İlanı Oluştur</div>
             <div class="card-body">
+                {% if not can_post_via_plan and can_post_via_credits %}
+                <div class="alert alert-info" role="alert">
+                    Bu ayki ilan limitinizi doldurdunuz. Ek ilan krediniz ({{ user.extra_job_posting_credits }} adet) kullanılarak ilan yayınlayacaksınız.
+                </div>
+                {% elif not can_post_via_plan and not can_post_via_credits %}
+                <div class="alert alert-danger" role="alert">
+                    Bu ayki ilan limitinizi doldurdunuz ve ek ilan krediniz bulunmamaktadır. Üyeliğinizi yükselterek veya ürün satın alarak daha fazla ilan yayınlayabilirsiniz.
+                </div>
+                {% endif %}
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}

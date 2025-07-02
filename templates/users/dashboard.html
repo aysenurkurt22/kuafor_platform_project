@@ -11,6 +11,27 @@
 </div>
 
 <div class="row mt-4">
+    {% if user.referral_code %}
+    <div class="col-12 mb-4">
+        <div class="alert alert-info">
+            Davet Kodunuz: <strong>{{ user.referral_code }}</strong> - Arkadaşlarınızı bu kodla davet ederek bonus kazanın!
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">Tercihlerinizi Güncelleyin</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ preferences_form.as_p }}
+                    <button type="submit" class="btn btn-primary">Tercihleri Kaydet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {% if user.is_employer %}
     <div class="col-md-6 mb-4">
         <div class="card">
@@ -53,6 +74,29 @@
                 {% else %}
                 <p>Henüz hiç siparişiniz bulunmamaktadır.</p>
                 <a href="{% url 'product_list' %}" class="btn btn-sm btn-primary mt-3">Ürünleri Keşfet</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_customer %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Son Başvurularınız</div>
+            <div class="card-body">
+                {% if user_applications %}
+                <ul class="list-group">
+                    {% for application in user_applications %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'job_post_detail' application.job_posting.pk %}">{{ application.job_posting.title }}</a>
+                        <small>{{ application.application_date|date:"d M Y" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Henüz hiç iş ilanına başvurmadınız.</p>
+                <a href="{% url 'job_post_list' %}" class="btn btn-sm btn-primary mt-3">İş İlanlarını Keşfet</a>
                 {% endif %}
             </div>
         </div>
@@ -106,6 +150,7 @@
         <div class="card">
             <div class="card-header">Önerilen İş İlanları</div>
             <div class="card-body">
+                {% if recommended_jobs %}
                 <ul class="list-group">
                     {% for job_post in recommended_jobs %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -114,6 +159,9 @@
                     </li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <p>Şu anda size özel önerilen iş ilanı bulunmamaktadır.</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -124,6 +172,7 @@
         <div class="card">
             <div class="card-header">Önerilen Ürünler</div>
             <div class="card-body">
+                {% if recommended_products %}
                 <ul class="list-group">
                     {% for product in recommended_products %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -132,6 +181,32 @@
                     </li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <p>Şu anda size özel önerilen ürün bulunmamaktadır.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">Sadakat Puanlarınız</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ user.loyalty_points }} Puan</h5>
+                <p class="card-text">Daha fazla alışveriş yaparak veya arkadaşlarınızı davet ederek puan kazanın!</p>
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_employer %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">İş İlanı Kredileriniz</div>
+            <div class="card-body">
+                <p><strong>Vurgulama Kredisi:</strong> {{ user.job_highlight_credits }}</p>
+                <p><strong>Ek İlan Kredisi:</strong> {{ user.extra_job_posting_credits }}</p>
+                <p class="card-text">Ürün satın alarak veya üyelik yükselterek daha fazla kredi kazanın.</p>
             </div>
         </div>
     </div>

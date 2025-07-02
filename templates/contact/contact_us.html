@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Bize Ulaşın{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header">Bize Ulaşın</div>
+            <div class="card-body">
+                <p class="lead">Sorularınız, geri bildirimleriniz veya işbirliği teklifleriniz için bizimle iletişime geçmekten çekinmeyin.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">Mesajı Gönder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

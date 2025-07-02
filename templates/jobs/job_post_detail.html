@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h1>{{ job_post.title }}</h1>
@@ -16,7 +16,32 @@
                 <p><strong>Maaş Beklentisi:</strong> {{ job_post.salary_expectation|default:"Belirtilmemiş" }}</p>
                 <p><strong>Çalışma Türü:</strong> {{ job_post.get_employment_type_display }}</p>
                 <p><strong>Gerekli Yetenekler:</strong> {{ job_post.skills_required }}</p>
-                <a href="{% url 'job_post_list' %}" class="btn btn-secondary">Tüm İş İlanları</a>
+
+                {% if user.is_authenticated and not user.is_employer %}
+                    {% if user.applications.filter(job_posting=job_post).exists %}
+                        <p class="alert alert-info">Bu ilana zaten başvurdunuz.</p>
+                    {% else %}
+                        <form action="{% url 'apply_job' job_post.pk %}" method="post" class="d-inline-block me-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Bu İlana Başvur</button>
+                        </form>
+                    {% endif %}
+                {% elif not user.is_authenticated %}
+                    <p class="alert alert-info">Başvurmak için giriş yapmanız veya kayıt olmanız gerekmektedir.</p>
+                    <a href="{% url 'login' %}" class="btn btn-primary">Giriş Yap</a>
+                    <a href="{% url 'register' %}" class="btn btn-secondary">Kayıt Ol</a>
+                {% endif %}
+
+                {% if user.is_authenticated and user.is_employer and user == job_post.employer %}
+                    {% if not job_post.employer.user_membership or not job_post.employer.user_membership.is_active or not job_post.employer.user_membership.membership_plan.highlight_listings %}
+                        <form action="{% url 'highlight_job_post' job_post.pk %}" method="post" class="d-inline-block ms-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">İlanı Vurgula (Kredi Kullan)</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'job_post_list' %}" class="btn btn-secondary mt-3">Tüm İş İlanları</a>
             </div>
         </div>
     </div>

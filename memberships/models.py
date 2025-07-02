@@ -6,16 +6,20 @@ class MembershipPlan(models.Model):
         ('FREE', 'Free'),
         ('BASIC', 'Basic'),
         ('PRO', 'Pro'),
+        ('ENTERPRISE', 'Enterprise'),
     )
     slug = models.SlugField(null=True, blank=True)
     membership_type = models.CharField(choices=PLAN_CHOICES, default='FREE', max_length=30)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    duration_months = models.IntegerField(default=1) # For monthly plans
-    max_job_postings = models.IntegerField(default=1) # Max job postings per month for this plan
+    duration_months = models.IntegerField(default=1)
+    max_job_postings = models.IntegerField(default=1)
     highlight_listings = models.BooleanField(default=False)
     featured_listings = models.BooleanField(default=False)
     cv_pool_access = models.BooleanField(default=False)
     analytics_access = models.BooleanField(default=False)
+    priority_support = models.BooleanField(default=False)
+    custom_integrations = models.BooleanField(default=False)
+    product_discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00) # Yeni indirim alanı
 
     def __str__(self):
         return self.membership_type

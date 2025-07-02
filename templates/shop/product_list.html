@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-3">
+    <div class="col-12 col-md-3 mb-4 mb-md-0"> {# Added col-12 for mobile #}
         <h4 class="mb-3">Kategoriler</h4>
         <div class="list-group">
             <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action {% if not category %}active{% endif %}">Tüm Ürünler</a>
@@ -13,11 +13,11 @@
             {% endfor %}
         </div>
     </div>
-    <div class="col-md-9">
+    <div class="col-12 col-md-9"> {# Added col-12 for mobile #}
         <h1>{% if category %}{{ category.name }} Kategorisindeki Ürünler{% else %}Tüm Ürünler{% endif %}</h1>
         <div class="row">
             {% for product in products %}
-            <div class="col-md-4 mb-4">
+            <div class="col-6 col-sm-4 col-md-4 mb-4"> {# Adjusted for smaller screens #}
                 <div class="card h-100">
                     {% if product.image %}
                     <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">

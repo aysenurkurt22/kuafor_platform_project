@@ -67,7 +67,7 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True) # Normal ürün
     subscription_product = models.ForeignKey(SubscriptionProduct, on_delete=models.CASCADE, null=True, blank=True) # Abonelik ürünü
     quantity = models.IntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # price_at_purchase olarak kullanılacak
 
     def __str__(self):
         if self.product:
@@ -95,6 +95,7 @@ class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
     subscription_product = models.ForeignKey(SubscriptionProduct, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # price_at_purchase olarak kullanılacak
 
     def __str__(self):
         if self.product:
@@ -104,11 +105,7 @@ class CartItem(models.Model):
         return "Unknown Item"
 
     def get_total_price(self):
-        if self.product:
-            return self.quantity * self.product.price
-        elif self.subscription_product:
-            return self.quantity * self.subscription_product.price
-        return 0
+        return self.quantity * self.price
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')

@@ -4,25 +4,65 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h1>{{ product.name }}</h1>
             </div>
             <div class="card-body">
-                {% if product.image %}
-                <img src="{{ product.image.url }}" class="img-fluid mb-3" alt="{{ product.name }}">
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3 mb-md-0">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <p><strong>Açıklama:</strong> {{ product.description }}</p>
+                        <p><strong>Kategori:</strong> {{ product.category.name|default:"Belirtilmemiş" }}</p>
+                        <p><strong>Stok:</strong> {{ product.stock }}</p>
+                        
+                        {% if user.is_authenticated and user.user_membership and user.user_membership.is_active and product.price != discounted_price %}
+                            <p class="text-muted">Orijinal Fiyat: <del>₺{{ product.price|floatformat:2 }}</del></p>
+                            <p class="h4 text-success">Üyelik Fiyatı: ₺{{ discounted_price|floatformat:2 }}</p>
+                        {% else %}
+                            <p class="h4">Fiyat: ₺{{ product.price|floatformat:2 }}</p>
+                        {% endif %}
+
+                        <form action="{% url 'add_to_cart' product.pk %}" method="post" class="d-flex align-items-center mt-3">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control me-2" style="width: 80px;">
+                            <button type="submit" class="btn btn-success">Sepete Ekle</button>
+                        </form>
+                        <a href="{% url 'product_list' %}" class="btn btn-secondary mt-3">Tüm Ürünler</a>
+                        <a href="{% url 'add_to_wishlist' product.pk %}" class="btn btn-outline-danger mt-3 ms-2">İstek Listesine Ekle</a>
+                    </div>
+                </div>
+
+                <h5 class="mt-5">Yorumlar</h5>
+                {% if reviews %}
+                <ul class="list-group mb-3">
+                    {% for review in reviews %}
+                    <li class="list-group-item">
+                        <strong>{{ review.user.username }}</strong> ({{ review.rating }} yıldız)
+                        <p class="mb-0">{{ review.comment }}</p>
+                        <small class="text-muted">{{ review.created_at|date:"d M Y H:i" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Bu ürün için henüz yorum bulunmamaktadır.</p>
                 {% endif %}
-                <p><strong>Açıklama:</strong> {{ product.description }}</p>
-                <p><strong>Fiyat:</strong> ₺{{ product.price }}</p>
-                <p><strong>Kategori:</strong> {{ product.category }}</p>
-                <p><strong>Stok:</strong> {{ product.stock }}</p>
-                <form action="{% url 'add_to_cart' product.pk %}" method="post" class="d-flex align-items-center">
+
+                {% if user.is_authenticated %}
+                <h5 class="mt-4">Yorum Bırakın</h5>
+                <form method="post">
                     {% csrf_token %}
-                    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control me-2" style="width: 80px;">
-                    <button type="submit" class="btn btn-success">Sepete Ekle</button>
+                    {{ review_form.as_p }}
+                    <button type="submit" class="btn btn-primary">Yorumu Gönder</button>
                 </form>
-                <a href="{% url 'product_list' %}" class="btn btn-secondary mt-3">Tüm Ürünler</a>
+                {% else %}
+                <p class="alert alert-info">Yorum yapmak için giriş yapmalısınız.</p>
+                {% endif %}
             </div>
         </div>
     </div>

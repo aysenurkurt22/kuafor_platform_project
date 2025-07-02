@@ -5,14 +5,14 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1>Arama Sonuçları {% if query %}: "{{ query }}"{% endif %}</h1>
+        <h1 class="text-center">Arama Sonuçları {% if query %}: "{{ query }}"{% endif %}</h1>
 
         <h2 class="mt-4">İş İlanları</h2>
         {% if job_results %}
         <div class="list-group">
             {% for job_post in job_results %}
             <a href="{% url 'job_post_detail' job_post.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-3">
-                <div class="d-flex w-100 justify-content-between">
+                <div class="d-flex w-100 justify-content-between flex-wrap">
                     <h5 class="mb-1">{{ job_post.title }}</h5>
                     <small>{{ job_post.created_at|date:"d M Y" }}</small>
                 </div>
@@ -29,7 +29,7 @@
         {% if product_results %}
         <div class="row">
             {% for product in product_results %}
-            <div class="col-md-4 mb-4">
+            <div class="col-6 col-sm-4 col-md-3 mb-4"> {# Adjusted for smaller screens #}
                 <div class="card h-100">
                     {% if product.image %}
                     <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">

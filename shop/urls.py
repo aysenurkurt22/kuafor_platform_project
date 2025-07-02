@@ -19,4 +19,5 @@ urlpatterns = [
     path('subscription_products/', views.subscription_product_list, name='subscription_product_list'),
     path('subscription_product/<int:pk>/', views.subscription_product_detail, name='subscription_product_detail'),
     path('add_subscription_to_cart/<int:pk>/', views.add_subscription_to_cart, name='add_subscription_to_cart'),
+    path('iyzico_callback/', views.iyzico_callback, name='iyzico_callback'), # Iyzico callback URL'si eklendi
 ]

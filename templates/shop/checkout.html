@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">Ödeme</div>
             <div class="card-body">
@@ -14,8 +14,8 @@
                     {% for item in cart.items.all %}
                     <li class="list-group-item d-flex justify-content-between lh-condensed">
                         <div>
-                            <h6 class="my-0">{{ item.product.name }}</h6>
-                            <small class="text-muted">Adet: {{ item.quantity }}</small>
+                            <h6 class="my-0">{% if item.product %}{{ item.product.name }}{% elif item.subscription_product %}{{ item.subscription_product.name }}{% endif %}</h6>
+                            <small class="text-muted">Adet: {{ item.quantity }} x ₺{{ item.price|floatformat:2 }}</small>
                         </div>
                         <span class="text-muted">₺{{ item.get_total_price|floatformat:2 }}</span>
                     </li>
@@ -24,13 +24,39 @@
                         <span>Toplam (₺)</span>
                         <strong>₺{{ cart.get_total_price|floatformat:2 }}</strong>
                     </li>
+                    {% if total_discount > 0 %}
+                    <li class="list-group-item d-flex justify-content-between text-success">
+                        <span>Üyelik İndirimi</span>
+                        <strong>- ₺{{ total_discount|floatformat:2 }}</strong>
+                    </li>
+                    {% endif %}
+                    {% if loyalty_discount_amount > 0 %}
+                    <li class="list-group-item d-flex justify-content-between text-success">
+                        <span>Sadakat Puanı İndirimi</span>
+                        <strong>- ₺{{ loyalty_discount_amount|floatformat:2 }}</strong>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Ödenecek Tutar</span>
+                        <strong>₺{{ (cart.get_total_price - total_discount - loyalty_discount_amount)|floatformat:2 }}</strong>
+                    </li>
                 </ul>
 
-                <h5 class="mb-3">Ödeme Bilgileri (Yer Tutucu)</h5>
-                <p>Bu kısım iyzico ödeme entegrasyonu için kullanılacaktır.</p>
-                <form method="post">
+                <h5 class="mb-3">Ödeme Bilgileri (Iyzico Entegrasyonu)</h5>
+                <p>Mevcut Sadakat Puanlarınız: <strong>{{ request.user.loyalty_points }}</strong></p>
+                {% if request.user.loyalty_points > 0 %}
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="use_loyalty_points" id="useLoyaltyPoints" form="checkoutForm">
+                    <label class="form-check-label" for="useLoyaltyPoints">
+                        Sadakat Puanlarımı Kullan (₺{{ (request.user.loyalty_points / 100)|floatformat:2 }} indirim)
+                    </label>
+                </div>
+                {% endif %}
+
+                <p>Ödeme işlemini tamamlamak için aşağıdaki butona tıklayın. Iyzico ödeme sayfasına yönlendirileceksiniz.</p>
+                <form method="post" action="{% url 'checkout' %}" id="checkoutForm">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg btn-block">Ödemeyi Tamamla</button>
+                    <button type="submit" class="btn btn-success btn-lg btn-block">Iyzico ile Ödeme Yap</button>
                 </form>
                 {% else %}
                 <p>Sepetiniz boş. Ödeme yapamazsınız.</p>

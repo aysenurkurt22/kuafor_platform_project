@@ -7,9 +7,10 @@
     <h1 class="display-4">Kuaför Kariyer & E-Commerce Platformuna Hoş Geldiniz!</h1>
     <p class="lead">İş ilanları ve profesyonel ürünler için tek adres.</p>
     <hr class="my-4">
-    <p>İş arayanlar ve işverenler için en iyi fırsatlar, kuaförlük sektörüne özel ürünler.</p>
-    <a class="btn btn-primary btn-lg" href="{% url 'job_post_list' %}" role="button">İş İlanlarını Keşfet</a>
-    <a class="btn btn-success btn-lg" href="{% url 'product_list' %}" role="button">Ürünleri İncele</a>
+    <p>
+        <a class="btn btn-primary btn-lg" href="{% url 'job_post_list' %}" role="button">İş İlanlarını Keşfet</a>
+        <a class="btn btn-success btn-lg" href="{% url 'product_list' %}" role="button">Ürünleri İncele</a>
+    </p>
 </div>
 
 {% if recently_viewed_products %}
@@ -17,7 +18,69 @@
     <h2>Son Görüntülenen Ürünler</h2>
     <div class="row">
         {% for product in recently_viewed_products %}
-        <div class="col-md-3 mb-4">
+        <div class="col-6 col-md-3 mb-4">
+            <div class="card h-100">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">₺{{ product.price|floatformat:2 }}</p>
+                    <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if recently_viewed_jobs %}
+<div class="mt-5">
+    <h2>Son Görüntülenen İş İlanları</h2>
+    <div class="row">
+        {% for job_post in recently_viewed_jobs %}
+        <div class="col-12 col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ job_post.title }}</h5>
+                    <p class="card-text">{{ job_post.description|truncatechars:100 }}</p>
+                    <p class="card-text"><small><strong>Lokasyon:</strong> {{ job_post.location }}</small></p>
+                    <a href="{% url 'job_post_detail' job_post.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if featured_jobs %}
+<div class="mt-5">
+    <h2>Öne Çıkan İş İlanları</h2>
+    <div class="row">
+        {% for job_post in featured_jobs %}
+        <div class="col-12 col-md-4 mb-4">
+            <div class="card h-100 border-danger">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ job_post.title }} <span class="badge bg-danger">Öne Çıkan</span></h5>
+                    <p class="card-text">{{ job_post.description|truncatechars:100 }}</p>
+                    <p class="card-text"><small><strong>Lokasyon:</strong> {{ job_post.location }}</small></p>
+                    <a href="{% url 'job_post_detail' job_post.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if popular_products %}
+<div class="mt-5">
+    <h2>Popüler Ürünler</h2>
+    <div class="row">
+        {% for product in popular_products %}
+        <div class="col-6 col-md-3 mb-4">
             <div class="card h-100">
                 {% if product.image %}
                 <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">

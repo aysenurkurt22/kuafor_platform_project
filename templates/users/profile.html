@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-12 col-md-8">
         <div class="card">
             <div class="card-header">Profil Bilgileri</div>
             <div class="card-body">
@@ -12,7 +12,12 @@
                 <p><strong>E-posta:</strong> {{ user.email }}</p>
                 <p><strong>İşveren:</strong> {% if user.is_employer %}Evet{% else %}Hayır{% endif %}</p>
                 <p><strong>Müşteri:</strong> {% if user.is_customer %}Evet{% else %}Hayır{% endif %}</p>
+                <p><strong>Sadakat Puanları:</strong> {{ user.loyalty_points }}</p>
+                {% if user.referral_code %}
+                <p><strong>Davet Kodunuz:</strong> {{ user.referral_code }}</p>
+                {% endif %}
                 <a href="{% url 'logout' %}" class="btn btn-danger">Çıkış Yap</a>
+                <a href="{% url 'user_dashboard' %}" class="btn btn-secondary ms-2">Kontrol Paneline Dön</a>
             </div>
         </div>
     </div>

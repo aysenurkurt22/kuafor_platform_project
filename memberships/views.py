@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from .models import MembershipPlan, UserMembership
 from django.contrib import messages
 from datetime import datetime, timedelta
+from kuafor_platform_project.utils import award_referral_bonus # award_referral_bonus eklendi
 
 def membership_plans_list(request):
     plans = MembershipPlan.objects.all().order_by('price')
@@ -38,8 +39,13 @@ def purchase_membership(request, plan_slug):
             request.user.user_membership = user_membership
             request.user.save()
 
+            # Eğer kullanıcı bir referans kodu ile geldiyse, referans verene bonus ver
+            if request.user.referred_by:
+                award_referral_bonus(request.user.referred_by)
+                messages.info(request, f'{request.user.referred_by.username} tarafından davet edildiğiniz için referans bonusu kazandınız!')
+
             messages.success(request, f'{membership_plan.membership_type} üyeliğiniz başarıyla aktifleştirildi!')
-            return redirect('profile') # Profil sayfasına yönlendir
+            return redirect('user_dashboard') # Kontrol paneline yönlendir
         else:
             messages.error(request, 'Ödeme başarısız oldu. Lütfen tekrar deneyin.')
             return redirect('membership_plans_list')

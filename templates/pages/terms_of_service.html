@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Hizmet Şartları{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header">Hizmet Şartları</div>
+            <div class="card-body">
+                <p>Bu hizmet şartları, Kuaför Kariyer & E-Commerce Platformu'nu kullanımınızı düzenler. Platformumuzu kullanarak bu şartları kabul etmiş sayılırsınız.</p>
+                <h5>1. Hizmetlerin Tanımı</h5>
+                <p>Platformumuz, kuaförlük ve güzellik sektöründe iş ilanı yayınlama, iş arama, ürün satın alma ve eğitim kurslarına erişim gibi hizmetler sunar.</p>
+                <h5>2. Kullanıcı Sorumlulukları</h5>
+                <p>Kullanıcılar, platformu yasalara ve ahlaki kurallara uygun olarak kullanmayı taahhüt eder. Yanlış veya yanıltıcı bilgi sağlamak yasaktır.</p>
+                <h5>3. Fikri Mülkiyet</h5>
+                <p>Platformdaki tüm içerik (metin, grafikler, logolar vb.) Kuaför Kariyer & E-Commerce Platformu'na aittir ve telif hakları ile korunmaktadır.</p>
+                <h5>4. Gizlilik Politikası</h5>
+                <p>Kullanıcı verilerinin toplanması ve kullanılması, <a href="{% url 'privacy_policy' %}">Gizlilik Politikamız</a> ile düzenlenmektedir.</p>
+                <h5>5. Değişiklikler</h5>
+                <p>Hizmet şartlarımız zaman zaman güncellenebilir. Güncellemeler platformda yayınlandığı anda yürürlüğe girer.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

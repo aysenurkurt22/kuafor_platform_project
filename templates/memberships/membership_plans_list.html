@@ -4,21 +4,21 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
-        <h1 class="mb-4">Üyelik Planlarımız</h1>
+    <div class="col-12 col-md-10">
+        <h1 class="mb-4 text-center">Üyelik Planlarımız</h1>
         {% if user_membership %}
-            <div class="alert alert-info" role="alert">
+            <div class="alert alert-info text-center" role="alert">
                 Mevcut Üyeliğiniz: <strong>{{ user_membership.membership_plan.membership_type }}</strong> (Bitiş Tarihi: {{ user_membership.end_date|date:"d M Y H:i" }})
             </div>
         {% else %}
-            <div class="alert alert-warning" role="alert">
+            <div class="alert alert-warning text-center" role="alert">
                 Şu anda aktif bir üyeliğiniz bulunmamaktadır.
             </div>
         {% endif %}
 
-        <div class="row">
+        <div class="row justify-content-center">
             {% for plan in plans %}
-            <div class="col-md-4 mb-4">
+            <div class="col-12 col-sm-6 col-md-4 mb-4"> {# Adjusted for smaller screens #}
                 <div class="card h-100 text-center">
                     <div class="card-header">
                         <h4 class="my-0 font-weight-normal">{{ plan.membership_type }}</h4>
@@ -46,6 +46,16 @@
                             <li>Analitik Paneli</li>
                             {% else %}
                             <li class="text-muted">Analitik Paneli</li>
+                            {% endif %}
+                            {% if plan.priority_support %}
+                            <li>Öncelikli Destek</li>
+                            {% else %}
+                            <li class="text-muted">Öncelikli Destek</li>
+                            {% endif %}
+                            {% if plan.custom_integrations %}
+                            <li>Özel Entegrasyonlar</li>
+                            {% else %}
+                            <li class="text-muted">Özel Entegrasyonlar</li>
                             {% endif %}
                         </ul>
                         {% if user_membership and user_membership.membership_plan == plan %}

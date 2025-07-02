@@ -13,7 +13,7 @@
             {% for job_post in job_posts %}
             {% with user_membership=job_post.employer.user_membership %}
             <a href="{% url 'job_post_detail' job_post.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-3 {% if user_membership and user_membership.membership_plan.featured_listings %}list-group-item-danger{% elif user_membership and user_membership.membership_plan.highlight_listings %}list-group-item-warning{% endif %}">
-                <div class="d-flex w-100 justify-content-between">
+                <div class="d-flex w-100 justify-content-between flex-wrap"> {# Added flex-wrap #}
                     <h5 class="mb-1">{{ job_post.title }}
                         {% if user_membership and user_membership.membership_plan.featured_listings %}
                             <span class="badge bg-danger">Öne Çıkan</span>

@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-12 col-md-6">
         <div class="card">
             <div class="card-header">{{ plan.membership_type }} Üyeliği Satın Al</div>
             <div class="card-body">
@@ -24,11 +24,19 @@
                     {% if plan.analytics_access %}
                     <li>Analitik Paneli</li>
                     {% endif %}
+                    {% if plan.priority_support %}
+                    <li>Öncelikli Destek</li>
+                    {% endif %}
+                    {% if plan.custom_integrations %}
+                    <li>Özel Entegrasyonlar</li>
+                    {% endif %}
                 </ul>
+                <p class="text-muted">Ödeme işlemi iyzico entegrasyonu ile gerçekleştirilecektir.</p>
                 <form method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg btn-block">Şimdi Satın Al</button>
+                    <button type="submit" class="btn btn-success btn-lg btn-block">Şimdi Satın Al (iyzico ile)</button>
                 </form>
+                <small class="text-muted mt-2">* Bu bir yer tutucudur. Gerçek iyzico entegrasyonu için API çağrıları burada yapılacaktır.</small>
             </div>
         </div>
     </div>

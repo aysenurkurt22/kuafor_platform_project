@@ -11,3 +11,13 @@ class CustomAuthenticationForm(AuthenticationForm):
     class Meta:
         model = CustomUser
         fields = ['username', 'password']
+
+class UserPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['preferred_locations', 'preferred_skills', 'preferred_product_categories']
+        widgets = {
+            'preferred_locations': forms.Textarea(attrs={'rows': 2}),
+            'preferred_skills': forms.Textarea(attrs={'rows': 2}),
+            'preferred_product_categories': forms.Textarea(attrs={'rows': 2}),
+        }

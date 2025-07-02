@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Iyzico Ödeme Sayfası (Simülasyon){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header">Iyzico Ödeme Sayfası (Simülasyon)</div>
+            <div class="card-body text-center">
+                <p class="lead">Bu, Iyzico ödeme sayfasının bir simülasyonudur.</p>
+                <p>Gerçek bir entegrasyonda, kullanıcı burada kart bilgilerini girer ve ödemeyi tamamlar.</p>
+                <p class="mt-4">Ödeme başarılı olduğunda, sistem sizi geri yönlendirecektir.</p>
+                
+                <form action="{% url 'iyzico_callback' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="success"> {# Simülasyon için başarılı durum #}
+                    <button type="submit" class="btn btn-success btn-lg">Ödemeyi Tamamla (Simülasyon)</button>
+                </form>
+                <form action="{% url 'iyzico_callback' %}" method="post" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="failure"> {# Simülasyon için başarısız durum #}
+                    <button type="submit" class="btn btn-danger btn-lg">Ödemeyi İptal Et / Başarısız (Simülasyon)</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
