@@ -13,9 +13,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-uwayc)qx0suq3alhz#6km@ea2dqae*dv6*!0pn5-7^0pt6!j6t')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG değerini Railway ortam değişkeninden al, yoksa True olarak ayarla.
+# Railway'e DJANGO_DEBUG=False eklediğinden emin ol.
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-#ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'web-production-fe50f.up.railway.app']
+# Railway'den gelen Bad Request (400) hatasını çözmek için ALLOWED_HOSTS doğrudan belirlendi.
+# Kendi Railway URL'ni buraya eklemeyi unutma.
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'web-production-fe50f.up.railway.app']
 
 
 # Application definition
@@ -61,7 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.messages',
             ],
         },
     },
