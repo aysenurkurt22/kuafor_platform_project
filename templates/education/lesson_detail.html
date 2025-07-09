@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}{{ lesson.title }}{% endblock %}
 
@@ -7,34 +8,41 @@
     <div class="col-12 col-md-10">
         <div class="card">
             <div class="card-header">
-                <h1>{{ lesson.title }}</h1>
-                <small>Kurs: <a href="{% url 'course_detail' course.pk %}">{{ course.title }}</a></small>
+                <h1>
+                    {{ lesson.title }}
+                    {% if user_progress.completed %}
+                        <span class="badge bg-success ms-2">{% trans "Tamamlandı" %} <i class="fas fa-check-circle"></i></span>
+                    {% endif %}
+                </h1>
+                <small>Kurs: <a href="{% url 'education:course_detail' slug=course.slug pk=course.pk %}">{{ course.title }}</a></small>
             </div>
             <div class="card-body">
-                <div class="lesson-content mb-4">
-                    {{ lesson.content|safe }}
-                </div>
-                {% if lesson.video_url %}
-                <div class="ratio ratio-16x9 mb-4">
-                    <iframe src="{{ lesson.video_url }}" title="{{ lesson.title }}" allowfullscreen></iframe>
-                </div>
+                {% if lesson.lesson_type == 'video' %}
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="{{ lesson.content_video_url }}" title="{{ lesson.title }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                {% elif lesson.lesson_type == 'text' %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            {{ lesson.content_text|linebreaksbr }}
+                        </div>
+                    </div>
+                {% elif lesson.lesson_type == 'quiz' %}
+                    <div class="alert alert-info">{% trans "Bu bir quiz dersidir. Quizi çözmek için aşağıdaki butona tıklayın." %}</div>
+                    <a href="{% url 'education:take_quiz' lesson_pk=lesson.pk %}" class="btn btn-primary">{% trans "Quizi Çöz" %}</a>
                 {% endif %}
 
-                <div class="d-flex justify-content-between mt-4 flex-wrap"> {# Added flex-wrap #}
-                    {% if lesson.get_previous_by_order %}
-                    <a href="{% url 'lesson_detail' course.pk lesson.get_previous_by_order.pk %}" class="btn btn-outline-primary mb-2 mb-md-0">&larr; Önceki Ders</a>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    {% if not user_progress.completed %}
+                        <form action="{% url 'education:mark_lesson_completed' lesson_pk=lesson.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">{% trans "Dersi Tamamlandı Olarak İşaretle" %}</button>
+                        </form>
                     {% else %}
-                    <span></span>
+                        <p class="text-success">{% trans "Bu dersi tamamladınız." %}</p>
                     {% endif %}
-
-                    {% if lesson.get_next_by_order %}
-                    <a href="{% url 'lesson_detail' course.pk lesson.get_next_by_order.pk %}" class="btn btn-outline-primary">Sonraki Ders &rarr;</a>
-                    {% else %}
-                    <span></span>
-                    {% endif %}
+                    <a href="{% url 'education:course_detail' slug=course.slug pk=course.pk %}" class="btn btn-secondary">{% trans "Kursa Geri Dön" %}</a>
                 </div>
-
-                <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary mt-3">Kursa Geri Dön</a>
             </div>
         </div>
     </div>

@@ -10,6 +10,17 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|capfirst }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     {{ form.as_p }}
                     <div class="mb-3">
                         <label for="id_referral_code" class="form-label">Referans Kodu (İsteğe Bağlı)</label>

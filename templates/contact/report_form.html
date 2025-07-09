@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}İçeriği Şikayet Et{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">"{{ content_object }}" Adlı İçeriği Şikayet Et</h3>
+                </div>
+                <div class="card-body">
+                    <p>Lütfen bu içeriği neden şikayet ettiğinizi belirtin. Ekibimiz en kısa sürede inceleyecektir.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-danger w-100">Şikayeti Gönder</button>
+                        <a href="{{ content_object.get_absolute_url }}" class="btn btn-secondary w-100 mt-2">İptal</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

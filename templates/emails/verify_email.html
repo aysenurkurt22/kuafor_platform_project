@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Hesabınızı Doğrulayın</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="text-align: center; color: #333;">Kuaför Kariyer Platformu'na Hoş Geldiniz!</h2>
+        <p>Merhaba {{ username }},</p>
+        <p>Platformumuza kaydınızı neredeyse tamamladınız. Hesabınızı aktifleştirmek ve platformumuzu kullanmaya başlamak için lütfen aşağıdaki butona tıklayın:</p>
+        <p style="text-align: center;">
+            <a href="{{ verification_url }}" style="display: inline-block; padding: 12px 25px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">Hesabımı Doğrula</a>
+        </p>
+        <p>Eğer yukarıdaki buton çalışmazsa, aşağıdaki linki kopyalayıp tarayıcınızın adres çubuğuna yapıştırabilirsiniz:</p>
+        <p><a href="{{ verification_url }}">{{ verification_url }}</a></p>
+        <p>Eğer bu kaydı siz oluşturmadıysanız, bu e-postayı dikkate almayabilirsiniz.</p>
+        <hr>
+        <p style="font-size: 0.9em; color: #777;">Saygılarımızla,<br>Kuaför Kariyer Ekibi</p>
+    </div>
+</body>
+</html>

@@ -32,7 +32,7 @@ def home(request):
     featured_jobs = JobPosting.objects.filter(employer__user_membership__membership_plan__featured_listings=True, is_active=True).order_by('-created_at')[:3]
 
     # Popüler Ürünler (En çok satanlar veya en çok görüntülenenler olabilir, şimdilik en yeniler)
-    popular_products = Product.objects.all().order_by('-created_at')[:3]
+    popular_products = Product.objects.all()[:3]
 
     unread_notifications_count = 0
     if request.user.is_authenticated:

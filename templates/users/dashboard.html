@@ -1,215 +1,1187 @@
 {% extends 'base.html' %}
 
-{% block title %}Kontrol Paneli{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1>Hoş Geldiniz, {{ user.username }}!</h1>
-        <p class="lead">Tüm etkinliklerinizi tek bir yerden yönetin.</p>
-    </div>
-</div>
+<div class="dashboard-wrapper">
+    <!-- Overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <button class="sidebar-close" id="sidebarClose">
+            <i class="fas fa-times"></i>
+        </button>
 
-<div class="row mt-4">
-    {% if user.referral_code %}
-    <div class="col-12 mb-4">
-        <div class="alert alert-info">
-            Davet Kodunuz: <strong>{{ user.referral_code }}</strong> - Arkadaşlarınızı bu kodla davet ederek bonus kazanın!
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">Tercihlerinizi Güncelleyin</div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ preferences_form.as_p }}
-                    <button type="submit" class="btn btn-primary">Tercihleri Kaydet</button>
-                </form>
+        <div class="sidebar-header">
+            <div class="d-flex align-items-center">
+                <div class="sidebar-brand">
+                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                    <div class="ms-2">
+                        <h6 class="mb-0">{{ user.username }}</h6>
+                        <small class="text-muted">
+                            {% if user.business_name %}{{ user.business_name }}{% else %}Kullanıcı{% endif %}
+                        </small>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    {% if user.is_employer %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Son İş İlanlarınız</div>
-            <div class="card-body">
+        <div class="sidebar-content">
+            <!-- Ana Dashboard -->
+            <div class="nav-section">
+                <a href="javascript:void(0)" class="nav-item active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Role-based Navigation -->
+            {% if user.is_employer %}
+            <div class="nav-section">
+                <div class="nav-section-title">İş Veren</div>
+                <a href="javascript:void(0)" class="nav-item" data-section="my-jobs">
+                    <i class="fas fa-briefcase"></i>
+                    <span>İş İlanlarım</span>
+                    <span class="badge bg-primary">{{ user_job_postings|length }}</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" data-section="applications">
+                    <i class="fas fa-users"></i>
+                    <span>Başvurular</span>
+                </a>
+                <a href="{% url 'jobs:job_post_create' %}" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Yeni İş İlanı</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.is_seller %}
+            <div class="nav-section">
+                <div class="nav-section-title">Satıcı</div>
+                <a href="javascript:void(0)" class="nav-item" data-section="my-products">
+                    <i class="fas fa-box"></i>
+                    <span>Ürünlerim</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" data-section="sales-orders">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Satış Siparişleri</span>
+                </a>
+                <a href="{% url 'shop:product_list' %}" class="nav-item">
+                    <i class="fas fa-plus"></i>
+                    <span>Ürün Ekle</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" data-section="sales-reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Satış Raporları</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.is_customer %}
+            <div class="nav-section">
+                <div class="nav-section-title">Müşteri</div>
+                <a href="{% url 'jobs:job_post_list' %}" class="nav-item">
+                    <i class="fas fa-search"></i>
+                    <span>İş İlanları</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" data-section="my-applications">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Başvurularım</span>
+                    <span class="badge bg-info">{{ user_applications|length }}</span>
+                </a>
+                <a href="{% url 'shop:order_history' %}" class="nav-item">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Siparişlerim</span>
+                </a>
+                <a href="{% url 'shop:product_list' %}" class="nav-item">
+                    <i class="fas fa-store"></i>
+                    <span>Mağaza</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Genel -->
+            <div class="nav-section">
+                <div class="nav-section-title">Genel</div>
+                <a href="javascript:void(0)" class="nav-item" data-section="messages">
+                    <i class="fas fa-comments"></i>
+                    <span>Mesajlar</span>
+                    {% if recent_messages %}
+                    <span class="badge bg-warning">{{ recent_messages|length }}</span>
+                    {% endif %}
+                </a>
+                <a href="javascript:void(0)" class="nav-item" data-section="notifications">
+                    <i class="fas fa-bell"></i>
+                    <span>Bildirimler</span>
+                    {% if recent_notifications %}
+                    <span class="badge bg-danger">{{ recent_notifications|length }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'users:manage_roles' %}" class="nav-item">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Rol Yönetimi</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="content-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-link sidebar-toggle" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0" id="breadcrumb">
+                            <li class="breadcrumb-item active">Dashboard</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="header-actions">
+                    <span class="text-muted">{{ user.loyalty_points }} Puan</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div class="content-body">
+            <!-- Dashboard Section (Default) -->
+            <div class="content-section active" id="section-dashboard">
+                <div class="row">
+                    <div class="col-12">
+                        <h2>Hoş Geldiniz, {{ user.username }}!</h2>
+                        <p class="text-muted mb-4">Bugün ne yapmak istiyorsunuz?</p>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    {% if user.is_seller %}
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card bg-primary text-white">
+                            <div class="stat-card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4>₺12,340</h4>
+                                        <p class="mb-0">Bu Ay Gelir</p>
+                                    </div>
+                                    <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if user.is_employer %}
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card bg-success text-white">
+                            <div class="stat-card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4>{{ user_job_postings|length }}</h4>
+                                        <p class="mb-0">Aktif İlanlar</p>
+                                    </div>
+                                    <i class="fas fa-briefcase fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if user.is_customer %}
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card bg-info text-white">
+                            <div class="stat-card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4>{{ user_applications|length }}</h4>
+                                        <p class="mb-0">Başvurularım</p>
+                                    </div>
+                                    <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card bg-warning text-white">
+                            <div class="stat-card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4>{{ user.loyalty_points }}</h4>
+                                        <p class="mb-0">Sadakat Puanı</p>
+                                    </div>
+                                    <i class="fas fa-star fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-bolt text-primary"></i> Hızlı İşlemler</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    {% if user.is_employer %}
+                                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                                        <a href="{% url 'jobs:job_post_create' %}" class="quick-action">
+                                            <div class="quick-action-icon bg-primary">
+                                                <i class="fas fa-plus"></i>
+                                            </div>
+                                            <span>İş İlanı Ver</span>
+                                        </a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if user.is_seller %}
+                                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                                        <a href="{% url 'shop:product_list' %}" class="quick-action">
+                                            <div class="quick-action-icon bg-success">
+                                                <i class="fas fa-box"></i>
+                                            </div>
+                                            <span>Ürün Ekle</span>
+                                        </a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if user.is_customer %}
+                                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                                        <a href="{% url 'jobs:job_post_list' %}" class="quick-action">
+                                            <div class="quick-action-icon bg-info">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                            <span>İş Ara</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                                        <a href="{% url 'shop:product_list' %}" class="quick-action">
+                                            <div class="quick-action-icon bg-warning">
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </div>
+                                            <span>Alışveriş</span>
+                                        </a>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                                        <a href="{% url 'users:manage_roles' %}" class="quick-action">
+                                            <div class="quick-action-icon bg-secondary">
+                                                <i class="fas fa-user-plus"></i>
+                                            </div>
+                                            <span>Rol Ekle</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-clock text-info"></i> Son Aktiviteler</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if recent_notifications %}
+                                <div class="activity-timeline">
+                                    {% for notification in recent_notifications|slice:":5" %}
+                                    <div class="activity-item">
+                                        <div class="activity-icon bg-info">
+                                            <i class="fas fa-bell"></i>
+                                        </div>
+                                        <div class="activity-content">
+                                            <p class="mb-1">{{ notification.message|truncatechars:60 }}</p>
+                                            <small class="text-muted">{{ notification.timestamp|timesince }} önce</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">Henüz aktivite bulunmamaktadır.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-comments text-primary"></i> Son Mesajlar</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if recent_messages %}
+                                {% for message in recent_messages|slice:":3" %}
+                                <div class="message-item">
+                                    <div class="d-flex">
+                                        <div class="message-avatar">
+                                            <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                        </div>
+                                        <div class="message-content ms-3">
+                                            <h6 class="mb-1">{{ message.sender.username }}</h6>
+                                            <p class="mb-1">{{ message.content|truncatechars:50 }}</p>
+                                            <small class="text-muted">{{ message.timestamp|timesince }} önce</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <p class="text-muted">Henüz mesaj bulunmamaktadır.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Sections (Hidden by default) -->
+            {% if user.is_employer %}
+            <div class="content-section" id="section-my-jobs">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3>İş İlanlarım</h3>
+                    <a href="{% url 'jobs:job_post_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Yeni İlan Ekle
+                    </a>
+                </div>
+
                 {% if user_job_postings %}
-                <ul class="list-group">
-                    {% for job_post in user_job_postings %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'job_post_detail' job_post.pk %}">{{ job_post.title }}</a>
-                        <span class="badge bg-secondary">{{ job_post.created_at|date:"d M Y" }}</span>
-                    </li>
+                <div class="row">
+                    {% for job in user_job_postings %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ job.title }}</h5>
+                                <p class="card-text text-muted">{{ job.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ job.created_at|date:"d M Y" }}</small>
+                                    <a href="{% url 'jobs:job_post_detail' job.pk %}" class="btn btn-outline-primary btn-sm">
+                                        Detay
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </ul>
-                <a href="{% url 'job_post_list' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm İlanlarınızı Gör</a>
+                </div>
                 {% else %}
-                <p>Henüz hiç iş ilanınız bulunmamaktadır.</p>
-                <a href="{% url 'job_post_create' %}" class="btn btn-sm btn-primary mt-3">Yeni İş İlanı Oluştur</a>
+                <div class="text-center py-5">
+                    <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                    <h4>Henüz İş İlanınız Yok</h4>
+                    <p class="text-muted">İlk iş ilanınızı vererek başlayın!</p>
+                    <a href="{% url 'jobs:job_post_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> İlk İlanımı Ver
+                    </a>
+                </div>
                 {% endif %}
             </div>
-        </div>
-    </div>
-    {% endif %}
+            {% endif %}
 
-    {% if user.is_customer %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Son Siparişleriniz</div>
-            <div class="card-body">
-                {% if user_orders %}
-                <ul class="list-group">
-                    {% for order in user_orders %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'order_detail' order.pk %}">Sipariş #{{ order.id }}</a>
-                        <span class="badge bg-secondary">₺{{ order.total_amount|floatformat:2 }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'order_history' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Siparişlerinizi Gör</a>
-                {% else %}
-                <p>Henüz hiç siparişiniz bulunmamaktadır.</p>
-                <a href="{% url 'product_list' %}" class="btn btn-sm btn-primary mt-3">Ürünleri Keşfet</a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
+            {% if user.is_customer %}
+            <div class="content-section" id="section-my-applications">
+                <h3 class="mb-4">Başvurularım</h3>
 
-    {% if user.is_customer %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Son Başvurularınız</div>
-            <div class="card-body">
                 {% if user_applications %}
-                <ul class="list-group">
+                <div class="row">
                     {% for application in user_applications %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'job_post_detail' application.job_posting.pk %}">{{ application.job_posting.title }}</a>
-                        <small>{{ application.application_date|date:"d M Y" }}</small>
-                    </li>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ application.job_posting.title }}</h5>
+                                <p class="card-text">{{ application.job_posting.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-info">{{ application.status|default:"Beklemede" }}</span>
+                                    <small class="text-muted">{{ application.application_date|date:"d M Y" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
                 {% else %}
-                <p>Henüz hiç iş ilanına başvurmadınız.</p>
-                <a href="{% url 'job_post_list' %}" class="btn btn-sm btn-primary mt-3">İş İlanlarını Keşfet</a>
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h4>Henüz Başvurunuz Yok</h4>
+                    <p class="text-muted">İş ilanlarını keşfedin ve başvurun!</p>
+                    <a href="{% url 'jobs:job_post_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> İş İlanlarını Gör
+                    </a>
+                </div>
                 {% endif %}
             </div>
-        </div>
-    </div>
-    {% endif %}
+            {% endif %}
 
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Son Mesajlarınız</div>
-            <div class="card-body">
+            <!-- Messages Section -->
+            <div class="content-section" id="section-messages">
+                <h3 class="mb-4">Mesajlar</h3>
                 {% if recent_messages %}
-                <ul class="list-group">
-                    {% for message in recent_messages %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'conversation' message.sender.pk %}"><strong>{{ message.sender.username }}:</strong> {{ message.content|truncatechars:40 }}</a>
-                        <small>{{ message.timestamp|date:"d M Y H:i" }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'inbox' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Mesajları Gör</a>
+                <div class="card">
+                    <div class="card-body">
+                        {% for message in recent_messages %}
+                        <div class="message-item border-bottom py-3">
+                            <div class="d-flex">
+                                <div class="message-avatar">
+                                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                                </div>
+                                <div class="message-content ms-3 flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">{{ message.sender.username }}</h6>
+                                        <small class="text-muted">{{ message.timestamp|date:"d M Y H:i" }}</small>
+                                    </div>
+                                    <p class="mb-0">{{ message.content }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% else %}
-                <p>Henüz hiç yeni mesajınız bulunmamaktadır.</p>
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h4>Henüz Mesajınız Yok</h4>
+                    <p class="text-muted">Kullanıcılarla iletişime geçin!</p>
+                </div>
                 {% endif %}
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Son Bildirimleriniz</div>
-            <div class="card-body">
+            <!-- Notifications Section -->
+            <div class="content-section" id="section-notifications">
+                <h3 class="mb-4">Bildirimler</h3>
                 {% if recent_notifications %}
-                <ul class="list-group">
-                    {% for notification in recent_notifications %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center {% if not notification.is_read %}list-group-item-info{% endif %}">
-                        <a href="{% url 'notification_list' %}">{{ notification.message|truncatechars:50 }}</a>
-                        <small>{{ notification.timestamp|date:"d M Y H:i" }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'notification_list' %}" class="btn btn-sm btn-outline-primary mt-3">Tüm Bildirimleri Gör</a>
+                <div class="card">
+                    <div class="card-body">
+                        {% for notification in recent_notifications %}
+                        <div class="notification-item {% if not notification.is_read %}bg-light{% endif %} border-bottom py-3">
+                            <div class="d-flex">
+                                <div class="notification-icon">
+                                    <i class="fas fa-bell fa-2x text-info"></i>
+                                </div>
+                                <div class="notification-content ms-3 flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <p class="mb-1">{{ notification.message }}</p>
+                                        <small class="text-muted">{{ notification.timestamp|timesince }} önce</small>
+                                    </div>
+                                    {% if not notification.is_read %}
+                                    <span class="badge bg-primary">Yeni</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% else %}
-                <p>Henüz hiç yeni bildiriminiz bulunmamaktadır.</p>
+                <div class="text-center py-5">
+                    <i class="fas fa-bell fa-3x text-muted mb-3"></i>
+                    <h4>Henüz Bildiriminiz Yok</h4>
+                    <p class="text-muted">Yeni bildirimler burada görünecek!</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
-
-    {% if user.is_employer and recommended_jobs %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Önerilen İş İlanları</div>
-            <div class="card-body">
-                {% if recommended_jobs %}
-                <ul class="list-group">
-                    {% for job_post in recommended_jobs %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'job_post_detail' job_post.pk %}">{{ job_post.title }}</a>
-                        <small>{{ job_post.location }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p>Şu anda size özel önerilen iş ilanı bulunmamaktadır.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if user.is_customer and recommended_products %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Önerilen Ürünler</div>
-            <div class="card-body">
-                {% if recommended_products %}
-                <ul class="list-group">
-                    {% for product in recommended_products %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
-                        <small>₺{{ product.price|floatformat:2 }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p>Şu anda size özel önerilen ürün bulunmamaktadır.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">Sadakat Puanlarınız</div>
-            <div class="card-body">
-                <h5 class="card-title">{{ user.loyalty_points }} Puan</h5>
-                <p class="card-text">Daha fazla alışveriş yaparak veya arkadaşlarınızı davet ederek puan kazanın!</p>
-            </div>
-        </div>
-    </div>
-
-    {% if user.is_employer %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">İş İlanı Kredileriniz</div>
-            <div class="card-body">
-                <p><strong>Vurgulama Kredisi:</strong> {{ user.job_highlight_credits }}</p>
-                <p><strong>Ek İlan Kredisi:</strong> {{ user.extra_job_posting_credits }}</p>
-                <p class="card-text">Ürün satın alarak veya üyelik yükselterek daha fazla kredi kazanın.</p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
+
+<style>
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Sidebar overlay (mobile için) */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 60px);
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 280px;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+    position: fixed;
+    height: calc(100vh - 60px);
+    top: 60px;
+    left: 0;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+    margin-left: -280px;
+}
+
+/* Mobile close button */
+.sidebar-close {
+    color: #333 !important;
+    background: rgba(255,255,255,0.9) !important;
+    border-radius: 50% !important;
+    width: 35px !important;
+    height: 35px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.sidebar-close:hover {
+    color: #007bff !important;
+    background: rgba(255,255,255,1) !important;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.sidebar-brand h6 {
+    font-weight: 600;
+    margin: 0;
+}
+
+.sidebar-content {
+    padding: 1rem 0;
+}
+
+.nav-section {
+    margin-bottom: 1.5rem;
+}
+
+.nav-section-title {
+    padding: 0 1.5rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    letter-spacing: 0.5px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    position: relative;
+}
+
+.nav-item:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.nav-item.active {
+    background-color: #e3f2fd;
+    color: #007bff;
+    border-left-color: #007bff;
+    font-weight: 600;
+}
+
+.nav-item i {
+    width: 20px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.nav-item span {
+    flex: 1;
+}
+
+.nav-item .badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    margin-top: 60px;
+    transition: margin-left 0.3s ease;
+    min-width: 0;
+}
+
+.main-content.expanded {
+    margin-left: 0;
+}
+
+.content-header {
+    background: #fff;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    z-index: 998;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sidebar-toggle {
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    color: #6c757d;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-right: 1rem;
+}
+
+.sidebar-toggle:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.content-body {
+    padding: 2rem;
+}
+
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+/* Statistics Cards */
+.stat-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    height: 100%;
+}
+
+.stat-card-body {
+    padding: 1.5rem;
+}
+
+/* Quick Actions */
+.quick-action {
+    display: block;
+    text-decoration: none;
+    color: #495057;
+    transition: transform 0.2s ease;
+    text-align: center;
+}
+
+.quick-action:hover {
+    transform: translateY(-3px);
+    color: #495057;
+    text-decoration: none;
+}
+
+.quick-action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.quick-action span {
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: block;
+}
+
+/* Activity Timeline */
+.activity-timeline {
+    position: relative;
+}
+
+.activity-item {
+    display: flex;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.activity-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    margin-left: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-content p {
+    word-wrap: break-word;
+    margin-bottom: 0.25rem;
+}
+
+/* Message Items */
+.message-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.message-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.message-avatar {
+    flex-shrink: 0;
+}
+
+.message-content {
+    min-width: 0;
+}
+
+.message-content h6,
+.message-content p {
+    word-wrap: break-word;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    flex-wrap: wrap;
+    margin-bottom: 0;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+    .content-header {
+        padding: 1rem;
+    }
+    
+    .content-body {
+        padding: 1.5rem;
+    }
+    
+    .stat-card-body {
+        padding: 1.25rem;
+    }
+    
+    .quick-action-icon {
+        width: 55px;
+        height: 55px;
+        font-size: 1.3rem;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    /* Sidebar overlay gösterimi */
+    .sidebar-overlay.show {
+        display: block;
+    }
+    
+    /* Mobile close button göster */
+    .sidebar-close {
+        display: block;
+    }
+    
+    /* Sidebar mobile davranışı */
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 1001;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    /* Main content mobile'da full width */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+    
+    /* Header responsive */
+    .content-header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .content-body {
+        padding: 1rem;
+    }
+    
+    /* Navigation items */
+    .nav-item {
+        padding: 1rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    /* Statistics cards responsive */
+    .stat-card .d-flex {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .stat-card i {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Quick actions responsive */
+    .quick-action-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+    
+    .quick-action span {
+        font-size: 0.85rem;
+    }
+    
+    /* Activity and message content */
+    .activity-content,
+    .message-content {
+        min-width: 0;
+        word-wrap: break-word;
+    }
+    
+    /* Breadcrumb responsive */
+    .breadcrumb-item {
+        font-size: 0.9rem;
+    }
+    
+    /* Badge positioning */
+    .nav-item .badge {
+        margin-left: 0.5rem;
+    }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 576px) {
+    .content-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .content-body {
+        padding: 0.75rem;
+    }
+    
+    /* Navigation smaller */
+    .nav-item {
+        padding: 0.875rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .nav-item i {
+        margin-right: 0.5rem;
+        width: 18px;
+    }
+    
+    .nav-section-title {
+        padding: 0 1rem 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    /* Sidebar header compact */
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .sidebar-brand h6 {
+        font-size: 0.95rem;
+    }
+    
+    .sidebar-brand small {
+        font-size: 0.75rem;
+    }
+    
+    /* Statistics cards */
+    .stat-card-body {
+        padding: 1rem;
+    }
+    
+    .stat-card h4 {
+        font-size: 1.5rem;
+    }
+    
+    .stat-card p {
+        font-size: 0.85rem;
+    }
+    
+    /* Quick actions grid */
+    .quick-action-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+    
+    .quick-action span {
+        font-size: 0.8rem;
+    }
+    
+    /* Card headers */
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    /* Activity timeline */
+    .activity-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.7rem;
+    }
+    
+    .activity-content {
+        margin-left: 0.75rem;
+    }
+    
+    .activity-content p {
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .activity-content small {
+        font-size: 0.75rem;
+    }
+    
+    /* Message items */
+    .message-content h6 {
+        font-size: 0.9rem;
+    }
+    
+    .message-content p {
+        font-size: 0.85rem;
+    }
+    
+    /* Header actions */
+    .header-actions {
+        font-size: 0.8rem;
+    }
+    
+    /* Breadcrumb */
+    .breadcrumb-item {
+        font-size: 0.8rem;
+    }
+    
+    /* Badges */
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.25em 0.4em;
+    }
+}
+
+/* Extra Small Devices */
+@media (max-width: 400px) {
+    .content-header {
+        padding: 0.5rem;
+    }
+    
+    .content-body {
+        padding: 0.5rem;
+    }
+    
+    .sidebar-header {
+        padding: 0.75rem;
+    }
+    
+    .nav-item {
+        padding: 0.75rem 0.75rem;
+    }
+    
+    .stat-card-body {
+        padding: 0.75rem;
+    }
+    
+    .quick-action-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .quick-action span {
+        font-size: 0.75rem;
+    }
+}
+
+/* Desktop sidebar hide/show behavior */
+@media (min-width: 769px) {
+    .sidebar-close {
+        display: none !important;
+    }
+    
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+
+/* Landscape orientation fixes */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sidebar {
+        height: 100vh;
+        top: 0;
+        overflow-y: auto;
+    }
+    
+    .main-content {
+        margin-top: 0;
+    }
+    
+    .sidebar-overlay {
+        top: 0;
+        height: 100vh;
+    }
+    
+    .content-body {
+        padding: 1rem;
+    }
+    
+    .stat-card-body {
+        padding: 1rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const navItems = document.querySelectorAll('.nav-item[data-section]');
+    const contentSections = document.querySelectorAll('.content-section');
+    const breadcrumb = document.getElementById('breadcrumb');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    // Sidebar toggle - Güncellenmiş versiyon
+    sidebarToggle.addEventListener('click', function() {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('show');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('show');
+            }
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    });
+
+    // Overlay click to close
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+        });
+    }
+
+    // Close button click
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', function() {
+            sidebar.classList.remove('show');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('show');
+            }
+        });
+    }
+
+    // Navigation
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const section = this.dataset.section;
+            const title = this.querySelector('span').textContent;
+            
+            // Update active nav item
+            navItems.forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show corresponding content section
+            contentSections.forEach(content => content.classList.remove('active'));
+            const targetSection = document.getElementById(`section-${section}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // Update breadcrumb
+            breadcrumb.innerHTML = `
+                <li class="breadcrumb-item">
+                    <a href="javascript:void(0)" data-section="dashboard">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item active">${title}</li>
+            `;
+            
+            // Mobile: Hide sidebar after selection
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('show');
+                }
+            }
+        });
+    });
+
+    // Breadcrumb navigation
+    breadcrumb.addEventListener('click', function(e) {
+        if (e.target.dataset.section) {
+            const section = e.target.dataset.section;
+            
+            // Reset to dashboard
+            navItems.forEach(nav => nav.classList.remove('active'));
+            document.querySelector('[data-section="dashboard"]').classList.add('active');
+            
+            contentSections.forEach(content => content.classList.remove('active'));
+            document.getElementById('section-dashboard').classList.add('active');
+            
+            breadcrumb.innerHTML = '<li class="breadcrumb-item active">Dashboard</li>';
+        }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('show');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('show');
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

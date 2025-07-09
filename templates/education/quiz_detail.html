@@ -1,0 +1,41 @@
+{# templates/education/quiz_detail.html #}
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">{{ quiz.title }}</h2>
+    <p class="text-muted">{% trans "Ders:" %} {{ lesson.title }}</p>
+    {% if quiz.description %}<p>{{ quiz.description }}</p>{% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for question in quiz.questions.all %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>{% trans "Soru" %} {{ forloop.counter }}: {{ question.text }}</h5>
+                </div>
+                <div class="card-body">
+                    {% for answer in question.answers.all %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="question_{{ question.pk }}" id="answer_{{ answer.pk }}" value="{{ answer.pk }}" required>
+                            <label class="form-check-label" for="answer_{{ answer.pk }}">
+                                {{ answer.text }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">{% trans "Bu quiz için henüz soru eklenmemiştir." %}</div>
+        {% endfor %}
+
+        {% if quiz.questions.all %}
+            <button type="submit" class="btn btn-primary">{% trans "Quizi Bitir" %}</button>
+        {% endif %}
+        <a href="{% url 'education:lesson_detail' course_slug=lesson.section.course.slug course_pk=lesson.section.course.pk lesson_pk=lesson.pk %}" class="btn btn-secondary">{% trans "Geri Dön" %}</a>
+    </form>
+</div>
+{% endblock %}

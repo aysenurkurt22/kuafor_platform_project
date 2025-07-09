@@ -1,9 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import CustomUserCreationForm, UserPreferencesForm
-from kuafor_platform_project.utils import send_welcome_email, award_referral_bonus
+from .forms import CustomUserCreationForm, UserPreferencesForm, CustomAuthenticationForm
+from kuafor_platform_project.utils import send_welcome_email, award_referral_bonus, send_verification_email
 from jobs.models import JobPosting, Application
 from shop.models import Order, Product, ProductCategory, OrderItem
 from messaging.models import Message
@@ -11,165 +11,251 @@ from notifications.models import Notification
 from .models import CustomUser
 import uuid
 from django.db.models import Q, Case, When, Count, Sum
+from django.contrib.contenttypes.models import ContentType
+from .decorators import employer_required, customer_required
+from django.utils.translation import gettext_lazy as _
 
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # Benzersiz referans kodu oluştur
-            user.referral_code = str(uuid.uuid4())[:8].upper()
-
-            # Referans kodu ile gelen kullanıcıyı ata
-            referred_by_code = request.GET.get('ref')
-            if referred_by_code:
-                try:
-                    referrer = CustomUser.objects.get(referral_code=referred_by_code)
-                    user.referred_by = referrer
-                    # Referans bonusunu ödüllendir
-                    award_referral_bonus(referrer)
-                    messages.success(request, f'{referrer.username} tarafından davet edildiniz ve bonus kazandınız!')
-                except CustomUser.DoesNotExist:
-                    messages.warning(request, 'Geçersiz referans kodu.')
-
+            user.is_active = False  # Deactivate account until email is verified
+            user.email_verification_token = str(uuid.uuid4())
+            user.email = form.cleaned_data['email']
             user.save()
-            login(request, user)
-            send_welcome_email(user.email, user.username)
-            return redirect('home')
+            send_verification_email(request, user)
+            messages.success(request, _('Hesabınızı doğrulamak için lütfen e-postanızı kontrol edin.'))
+            return redirect('users:login')
+        else:
+            messages.error(request, _('Lütfen formu doğru şekilde doldurun.'))
     else:
         form = CustomUserCreationForm()
     return render(request, 'users/register.html', {'form': form})
 
+def verify_email(request, token):
+    try:
+        user = CustomUser.objects.get(email_verification_token=token)
+        if not user.email_verified:
+            user.email_verified = True
+            user.is_active = True
+            user.email_verification_token = None  # Clear the token after verification
+            user.save()
+            messages.success(request, _('E-posta adresiniz başarıyla doğrulandı. Giriş yapabilirsiniz.'))
+        else:
+            messages.info(request, _('E-posta adresiniz zaten doğrulanmış.'))
+    except CustomUser.DoesNotExist:
+        messages.error(request, _('Geçersiz doğrulama bağlantısı.'))
+    return redirect('users:login')
+
+@login_required
+def resend_verification_email(request):
+    if request.user.email_verified:
+        messages.info(request, _('Hesabınız zaten doğrulanmış.'))
+        return redirect('home')
+    
+    send_verification_email(request, request.user)
+    messages.success(request, _('Yeni bir doğrulama e-postası adresinize gönderildi.'))
+    return redirect('users:login')
+
 def user_login(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
             if user is not None:
-                login(request, user)
-                return redirect('home')
+                if user.is_active and user.email_verified:
+                    login(request, user)
+                    return redirect('home')
+                elif not user.is_active:
+                    messages.error(request, _('Hesabınız henüz aktive edilmemiş. Lütfen e-postanızı kontrol edin.'))
+                    # Tekrar gönderme linki için context'e kullanıcıyı ekle
+                    return render(request, 'users/login.html', {'form': form, 'unverified_user': user})
+                else:
+                    messages.error(request, _('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.'))
+            else:
+                messages.error(request, _('Geçersiz kullanıcı adı veya parola.'))
         else:
-            print(form.errors)
+            messages.error(request, _('Lütfen formu doğru şekilde doldurun.'))
     else:
-        form = AuthenticationForm()
+        form = CustomAuthenticationForm()
     return render(request, 'users/login.html', {'form': form})
 
-@login_required
-def user_logout(request):
-    logout(request)
-    return redirect('home')
-
+# User Dashboard
 @login_required
 def user_dashboard(request):
-    user_job_postings = []
-    user_orders = []
-    recent_messages = []
-    recent_notifications = []
-    recommended_jobs = []
-    recommended_products = []
-    user_applications = []
-
-    if request.method == 'POST':
-        preferences_form = UserPreferencesForm(request.POST, instance=request.user)
-        if preferences_form.is_valid():
-            preferences_form.save()
-            messages.success(request, 'Tercihleriniz başarıyla güncellendi!')
-            return redirect('user_dashboard')
-        else:
-            messages.error(request, 'Tercihler güncellenirken bir hata oluştu.')
-    else:
-        preferences_form = UserPreferencesForm(instance=request.user)
-
-    if request.user.is_employer:
-        user_job_postings = JobPosting.objects.filter(employer=request.user).order_by('-created_at')[:5]
-        
-        # İşverenler için önerilen iş ilanları (kendi ilanları hariç, tercihlere ve popülerliğe göre)
-        recommended_jobs_query = JobPosting.objects.exclude(employer=request.user).filter(is_active=True)
-        
-        # Tercih edilen lokasyonlara göre filtrele
-        if request.user.preferred_locations:
-            locations = [loc.strip() for loc in request.user.preferred_locations.split(',') if loc.strip()]
-            if locations:
-                q_objects = Q()
-                for loc in locations:
-                    q_objects |= Q(location__icontains=loc)
-                recommended_jobs_query = recommended_jobs_query.filter(q_objects)
-        
-        # Tercih edilen yeteneklere göre filtrele
-        if request.user.preferred_skills:
-            skills = [skill.strip() for skill in request.user.preferred_skills.split(',') if skill.strip()]
-            if skills:
-                q_objects = Q()
-                for skill in skills:
-                    q_objects |= Q(skills_required__icontains=skill)
-                recommended_jobs_query = recommended_jobs_query.filter(q_objects)
-        
-        # Popülerliğe göre sırala (örneğin, en çok görüntülenenler veya başvurulanlar)
-        # Şimdilik en yenilerle birleştiriyoruz, daha gelişmiş bir sistem için ayrı bir metrik gerekebilir.
-        recommended_jobs = recommended_jobs_query.order_by('-created_at')[:5]
+    user = request.user
     
-    if request.user.is_customer:
-        user_orders = Order.objects.filter(customer=request.user).order_by('-order_date')[:5]
-        user_applications = Application.objects.filter(applicant=request.user).order_by('-application_date')[:5]
-
-        # Müşteriler için önerilen ürünler (tercihlere, satın alma geçmişine ve popülerliğe göre)
-        recommended_products_query = Product.objects.all()
-        
-        # Tercih edilen ürün kategorilerine göre filtrele
-        if request.user.preferred_product_categories:
-            categories = [cat.strip() for cat in request.user.preferred_product_categories.split(',') if cat.strip()]
-            if categories:
-                q_objects = Q()
-                for cat in categories:
-                    q_objects |= Q(category__name__icontains=cat)
-                recommended_products_query = recommended_products_query.filter(q_objects)
-        
-        # Satın alma geçmişindeki kategorilere göre öneri
-        purchased_categories = OrderItem.objects.filter(order__customer=request.user, product__isnull=False).values_list('product__category__name', flat=True).distinct()
-        if purchased_categories:
-            q_objects = Q()
-            for cat_name in purchased_categories:
-                if cat_name: # None olmayan kategorileri filtrele
-                    q_objects |= Q(category__name__icontains=cat_name)
-            recommended_products_query = recommended_products_query.filter(q_objects)
-
-        # Popülerliğe göre sırala (örneğin, en çok satanlar)
-        # Şimdilik en yenilerle birleştiriyoruz.
-        recommended_products = recommended_products_query.order_by('-created_at')[:5]
-
-        # Başvurulan iş ilanlarının lokasyon ve yeteneklerine göre iş ilanı önerileri (müşteriler için)
-        applied_job_locations = Application.objects.filter(applicant=request.user).values_list('job_posting__location', flat=True).distinct()
-        applied_job_skills = Application.objects.filter(applicant=request.user).values_list('job_posting__skills_required', flat=True).distinct()
-
-        recommended_jobs_for_customer_query = JobPosting.objects.filter(is_active=True)
-        if applied_job_locations:
-            q_objects = Q()
-            for loc in applied_job_locations:
-                if loc: 
-                    q_objects |= Q(location__icontains=loc)
-            recommended_jobs_for_customer_query = recommended_jobs_for_customer_query.filter(q_objects)
-        if applied_job_skills:
-            q_objects = Q()
-            for skill_str in applied_job_skills:
-                if skill_str: 
-                    for skill in skill_str.split(','):
-                        q_objects |= Q(skills_required__icontains=skill.strip())
-            recommended_jobs_for_customer_query = recommended_jobs_for_customer_query.filter(q_objects)
-        recommended_jobs = recommended_jobs_for_customer_query.order_by('-created_at')[:5]
-
-    recent_messages = Message.objects.filter(receiver=request.user).order_by('-timestamp')[:5]
-    recent_notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')[:5]
-
+    # Preferences form'u tanımla - POST request olursa form'u işle
+    if request.method == 'POST':
+        form = UserPreferencesForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _('Profil tercihleriniz başarıyla güncellendi.'))
+            return redirect('users:user_dashboard')
+        else:
+            messages.error(request, _('Profil tercihleri güncellenirken bir hata oluştu.'))
+    else:
+        form = UserPreferencesForm(instance=user)
+    
+    # Context'i template ile tam uyumlu olacak şekilde hazırla
     context = {
-        'user_job_postings': user_job_postings,
-        'user_orders': user_orders,
-        'user_applications': user_applications,
-        'recent_messages': recent_messages,
-        'recent_notifications': recent_notifications,
-        'recommended_jobs': recommended_jobs,
-        'recommended_products': recommended_products,
-        'preferences_form': preferences_form,
+        'user': user,
+        'preferences_form': form,
+        'user_job_postings': [],
+        'user_applications': [],
+        'user_orders': [],
+        'user_products': [],  # YENİ: Satıcı ürünleri
+        'recent_messages': [],
+        'recent_notifications': [],
+        'recommended_jobs': [],
+        'recommended_products': [],
     }
+
+    # Employer için veri hazırla
+    if user.is_employer:
+        context['user_job_postings'] = JobPosting.objects.filter(employer=user).order_by('-created_at')[:5]
+        context['applications'] = Application.objects.filter(job_posting__employer=user).order_by('-application_date')
+        context['recommended_jobs'] = JobPosting.objects.exclude(employer=user).order_by('-created_at')[:3]
+    
+    # Seller için veri hazırla - YENİ
+    if user.is_seller:
+        # Product modelinde seller field'ı olmadığı için şimdilik boş bırakıyoruz
+        # Gelecekte Product modeline seller field eklenebilir
+        context['user_products'] = []  # Product.objects.filter(seller=user)[:5] 
+    
+    # Customer için veri hazırla
+    if user.is_customer:
+        context['user_orders'] = Order.objects.filter(user=user).order_by('-order_date')[:5]
+        context['user_applications'] = Application.objects.filter(applicant=user).order_by('-application_date')[:5]
+        context['recommended_products'] = Product.objects.all()[:3]
+
+    # Ortak veriler
+    context['recent_messages'] = Message.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')[:5]
+    context['recent_notifications'] = Notification.objects.filter(user=user).order_by('-timestamp')[:5]
+
     return render(request, 'users/dashboard.html', context)
+
+@login_required
+def user_profile_update(request):
+    user = request.user
+    if request.method == 'POST':
+        form = UserPreferencesForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _('Profil tercihleriniz başarıyla güncellendi.'))
+            return redirect('users:user_dashboard')
+        else:
+            messages.error(request, _('Profil tercihleri güncellenirken bir hata oluştu.'))
+    else:
+        form = UserPreferencesForm(instance=user)
+    return render(request, 'users/profile_update.html', {'form': form})
+
+@login_required
+def upgrade_to_employer(request):
+    """Kullanıcıyı employer role'üne yükseltir"""
+    if request.method == 'POST':
+        user = request.user
+        
+        if not user.is_employer:
+            user.is_employer = True
+            
+            # Hoş geldin bonusu ver (eğer bu field'lar varsa)
+            if hasattr(user, 'job_highlight_credits'):
+                user.job_highlight_credits += 3
+            if hasattr(user, 'extra_job_posting_credits'):
+                user.extra_job_posting_credits += 2
+                
+            user.save()
+            
+            # Bildirim oluştur
+            Notification.objects.create(
+                user=user,
+                message='🎉 Tebrikler! İş veren özellikleriniz aktifleştirildi. 3 ücretsiz öne çıkarma kredisi kazandınız!',
+                notification_type='ACCOUNT_UPDATE'
+            )
+            
+            messages.success(request, 'Tebrikler! İş veren özellikleriniz başarıyla aktifleştirildi. 3 öne çıkarma kredisi hesabınıza eklendi!')
+        else:
+            messages.info(request, 'Zaten iş veren özellikleriniz aktif.')
+            
+        return redirect('users:user_dashboard')
+    
+    # GET request için onay sayfası
+    return render(request, 'users/upgrade_employer.html', {
+        'user': request.user
+    })
+
+@login_required
+def upgrade_to_seller(request):
+    """Kullanıcıyı seller role'üne yükseltir"""
+    if request.method == 'POST':
+        user = request.user
+        
+        if not user.is_seller:
+            user.is_seller = True
+            
+            # İşletme bilgileri form'dan al (opsiyonel)
+            business_name = request.POST.get('business_name', '').strip()
+            if business_name:
+                user.business_name = business_name
+                
+            user.save()
+            
+            # Bildirim oluştur
+            Notification.objects.create(
+                user=user,
+                message='🛍️ Tebrikler! Satıcı özellikleriniz aktifleştirildi. Artık ürün satabilirsiniz.',
+                notification_type='ACCOUNT_UPDATE'
+            )
+            
+            messages.success(request, 'Tebrikler! Satıcı özellikleriniz başarıyla aktifleştirildi.')
+        else:
+            messages.info(request, 'Zaten satıcı özellikleriniz aktif.')
+            
+        return redirect('users:user_dashboard')
+    
+    # GET request için onay sayfası
+    return render(request, 'users/upgrade_seller.html', {
+        'user': request.user
+    })
+
+@login_required 
+def downgrade_role(request):
+    """Kullanıcıların rollerini kapatmasına izin verir"""
+    if request.method == 'POST':
+        user = request.user
+        role_to_remove = request.POST.get('role')
+        
+        if role_to_remove == 'employer' and user.is_employer:
+            user.is_employer = False
+            user.save()
+            messages.success(request, 'İş veren özellikleriniz kapatıldı.')
+            
+        elif role_to_remove == 'seller' and user.is_seller:
+            user.is_seller = False
+            user.save()
+            messages.success(request, 'Satıcı özellikleriniz kapatıldı.')
+            
+        return redirect('users:user_dashboard')
+    
+    return render(request, 'users/manage_roles.html', {
+        'user': request.user
+    })
+
+def user_logout(request):
+    logout(request)
+    messages.info(request, _('Başarıyla çıkış yaptınız.'))
+    return redirect('home')
+
+# Decorator test views (for development/testing purposes)
+@employer_required
+def employer_test_view(request):
+    return render(request, 'users/employer_test.html')
+
+@customer_required
+def customer_test_view(request):
+    return render(request, 'users/customer_test.html')
+    

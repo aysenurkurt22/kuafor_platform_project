@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %} 
 
-{% block title %}Kurslar{% endblock %}
+{% block title %}{% trans "Eğitimler" %}{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -18,7 +19,7 @@
                         <p class="card-text">{{ course.description|truncatechars:100 }}</p>
                         <p class="card-text"><strong>Eğitmen:</strong> {{ course.instructor.username|default:"Belirtilmemiş" }}</p>
                         <p class="card-text"><strong>Fiyat:</strong> {% if course.price > 0 %}₺{{ course.price|floatformat:2 }}{% else %}Ücretsiz{% endif %}</p>
-                        <a href="{% url 'course_detail' course.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                        <a href="{% url 'education:course_detail' slug=course.slug pk=course.pk %}" class="btn btn-primary btn-sm">{% trans "Detayları Görüntüle" %}</a>
                     </div>
                 </div>
             </div>

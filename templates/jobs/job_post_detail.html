@@ -41,7 +41,13 @@
                     {% endif %}
                 {% endif %}
 
-                <a href="{% url 'job_post_list' %}" class="btn btn-secondary mt-3">Tüm İş İlanları</a>
+                <a href="{% url 'jobs:job_post_list' %}" class="btn btn-secondary mt-3">Tüm İş İlanları</a>
+                
+                {% if user.is_authenticated %}
+                <a href="{% url 'contact:report_content' content_type_id=content_type_id object_id=job_post.pk %}" class="btn btn-sm btn-outline-danger mt-3 float-end">
+                    <i class="fas fa-flag"></i> Şikayet Et
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>

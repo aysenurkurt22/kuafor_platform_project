@@ -3,9 +3,11 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import CustomUser
 
 class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True, label='Email')
+
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = UserCreationForm.Meta.fields + ('is_employer', 'is_customer')
+        fields = UserCreationForm.Meta.fields + ('email', 'is_employer', 'is_customer')
 
 class CustomAuthenticationForm(AuthenticationForm):
     class Meta:

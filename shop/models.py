@@ -1,130 +1,142 @@
+import uuid
 from django.db import models
-from users.models import CustomUser
+from django.conf import settings
 
 class ProductCategory(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    slug = models.SlugField(unique=True)
+    name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-
-    class Meta:
-        verbose_name_plural = "Product Categories"
 
     def __str__(self):
         return self.name
 
 class Product(models.Model):
+    category = models.ForeignKey(ProductCategory, related_name='products', on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.ForeignKey(ProductCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
-    stock = models.IntegerField(default=0)
+    stock = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.name
 
-class SubscriptionProduct(models.Model):
-    INTERVAL_CHOICES = (
-        ('MONTHLY', 'Monthly'),
-        ('QUARTERLY', 'Quarterly'),
-        ('ANNUALLY', 'Annually'),
-    )
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    interval = models.CharField(max_length=20, choices=INTERVAL_CHOICES, default='MONTHLY')
-    image = models.ImageField(upload_to='subscription_products/', blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'{self.name} ({self.get_interval_display()})'
-
 class Order(models.Model):
-    ORDER_STATUS_CHOICES = (
-        ('PENDING', 'Beklemede'),
-        ('PROCESSING', 'Hazırlanıyor'),
-        ('SHIPPED', 'Kargoya Verildi'),
-        ('DELIVERED', 'Teslim Edildi'),
-        ('CANCELLED', 'İptal Edildi'),
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+        ('COMPLETED', 'Completed'),
+        ('FAILED', 'Failed'),
     )
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_orders', null=True, blank=True)
+    order_number = models.CharField(max_length=32, unique=True, editable=False)
     order_date = models.DateTimeField(auto_now_add=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='PENDING')
+    is_completed = models.BooleanField(default=False)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
     shipping_address = models.TextField(blank=True, null=True)
-    is_completed = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            self.order_number = uuid.uuid4().hex
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Order {self.id} by {self.customer.username}"
+        return f"Order {self.order_number} by {self.user.username}"
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True) # Normal ürün
-    subscription_product = models.ForeignKey(SubscriptionProduct, on_delete=models.CASCADE, null=True, blank=True) # Abonelik ürünü
-    quantity = models.IntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # price_at_purchase olarak kullanılacak
-
-    def __str__(self):
-        if self.product:
-            return f"{self.quantity} of {self.product.name}"
-        elif self.subscription_product:
-            return f"{self.quantity} of {self.subscription_product.name}"
-        return "Unknown Item"
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    subscription_product = models.ForeignKey('SubscriptionProduct', on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def get_total_price(self):
-        return self.quantity * self.price
+        return self.price * self.quantity
+
+    def __str__(self):
+        product_name = self.product.name if self.product else (self.subscription_product.name if self.subscription_product else 'Unknown')
+        return f"{self.quantity} of {product_name}"
 
 class Cart(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cart')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Cart of {self.user.username}"
 
     def get_total_price(self):
-        return sum(item.get_total_price() for item in self.items.all())
+        """Sepetteki tüm ürünlerin toplam fiyatını hesapla"""
+        total = 0
+        for item in self.items.all():
+            total += item.get_total_price()
+        return total
+
+    def __str__(self):
+        return f"Cart for {self.user.username}"
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
-    subscription_product = models.ForeignKey(SubscriptionProduct, on_delete=models.CASCADE, null=True, blank=True)
+    subscription_product = models.ForeignKey('SubscriptionProduct', on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # price_at_purchase olarak kullanılacak
-
-    def __str__(self):
-        if self.product:
-            return f"{self.quantity} x {self.product.name}"
-        elif self.subscription_product:
-            return f"{self.quantity} x {self.subscription_product.name}"
-        return "Unknown Item"
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def get_total_price(self):
-        return self.quantity * self.price
+        """Bu cart item'ın toplam fiyatını hesapla"""
+        return self.price * self.quantity
+
+    def save(self, *args, **kwargs):
+        # Eğer price belirtilmemişse, ürünün güncel fiyatını kullan
+        if not self.price:
+            if self.product:
+                self.price = self.product.price
+            elif self.subscription_product:
+                if hasattr(self.subscription_product, 'price') and self.subscription_product.price:
+                    self.price = self.subscription_product.price
+                else:
+                    self.price = self.subscription_product.monthly_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        product_name = self.product.name if self.product else (self.subscription_product.name if self.subscription_product else 'Unknown')
+        return f"{self.quantity} of {product_name} in cart"
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    rating = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)]) # 1-5 yıldız
-    comment = models.TextField(blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rating = models.PositiveIntegerField() # Assuming 1-5 stars
+    comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('product', 'user') # Bir kullanıcı bir ürüne sadece bir yorum yapabilir
-        ordering = ('-created_at',)
-
     def __str__(self):
-        return f'{self.product.name} - {self.rating} stars by {self.user.username}'
+        return f"Review for {self.product.name} by {self.user.username}"
 
 class Wishlist(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='wishlist')
     products = models.ManyToManyField(Product, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Wishlist of {self.user.username}'
+        return f"Wishlist for {self.user.username}"
+
+class SubscriptionProduct(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    monthly_price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        # Geriye uyumluluk için price field'ını monthly_price ile doldur
+        if not self.price:
+            self.price = self.monthly_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+        

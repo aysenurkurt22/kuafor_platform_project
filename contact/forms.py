@@ -1,10 +1,15 @@
 from django import forms
-from .models import ContactMessage
+from .models import Report, ContactMessage
 
 class ContactForm(forms.ModelForm):
     class Meta:
         model = ContactMessage
         fields = ['name', 'email', 'subject', 'message']
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = Report
+        fields = ['reason', 'details']
         widgets = {
-            'message': forms.Textarea(attrs={'rows': 5}),
+            'details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Lütfen şikayetinizle ilgili ek detaylar verin.'}),
         }

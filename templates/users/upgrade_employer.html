@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}İş Veren Ol{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>🚀 İş Veren Özelliklerini Aktifleştir</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5>İş veren olarak neler yapabilirsiniz?</h5>
+                        <ul class="mb-0">
+                            <li>✅ Sınırsız iş ilanı verin</li>
+                            <li>✅ Başvuruları değerlendirin</li>
+                            <li>✅ Mesajlaşma sistemiyle adaylarla iletişim kurun</li>
+                            <li>✅ İş ilanlarınızı öne çıkarın</li>
+                            <li>✅ Aday veritabanına erişim</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <h6>🎁 Hoş Geldin Bonusu</h6>
+                        <p class="mb-0">İş veren olduğunuzda <strong>3 ücretsiz öne çıkarma kredisi</strong> kazanacaksınız!</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✨ İş Veren Özelliklerini Aktifleştir
+                            </button>
+                            <a href="{% url 'users:user_dashboard' %}" class="btn btn-outline-secondary">
+                                İptal
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <strong>Not:</strong> Bu özellik tamamen ücretsizdir. İstediğiniz zaman dashboard'tan deaktif edebilirsiniz.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

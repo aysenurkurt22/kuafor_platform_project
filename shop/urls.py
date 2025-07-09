@@ -1,10 +1,12 @@
 from django.urls import path
 from . import views
 
+app_name = 'shop'
+
 urlpatterns = [
     path('products/', views.product_list, name='product_list'),
     path('products/<slug:category_slug>/', views.product_list, name='product_list_by_category'),
-    path('product/<int:pk>/', views.product_detail, name='product_detail'),
+    path('product/<slug:slug>/<int:pk>/', views.product_detail, name='product_detail'),
     path('add_to_cart/<int:pk>/', views.add_to_cart, name='add_to_cart'),
     path('update_cart_item/<int:pk>/', views.update_cart_item, name='update_cart_item'),
     path('remove_from_cart/<int:pk>/', views.remove_from_cart, name='remove_from_cart'),
@@ -19,5 +21,7 @@ urlpatterns = [
     path('subscription_products/', views.subscription_product_list, name='subscription_product_list'),
     path('subscription_product/<int:pk>/', views.subscription_product_detail, name='subscription_product_detail'),
     path('add_subscription_to_cart/<int:pk>/', views.add_subscription_to_cart, name='add_subscription_to_cart'),
-    path('iyzico_callback/', views.iyzico_callback, name='iyzico_callback'), # Iyzico callback URL'si eklendi
+    path('iyzico_callback/', views.iyzico_callback, name='iyzico_callback'),
+    path('iyzico_initiate_payment/<int:order_id>/', views.iyzico_initiate_payment, name='iyzico_initiate_payment'),
+    path('invoice/<int:order_id>/', views.generate_invoice, name='generate_invoice'),
 ]

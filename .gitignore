@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+envcd/
+*.sqlite3
+db.sqlite3
+
+# Django
+*.log
+staticfiles/
+media/
+logs/
+
+# VSCode, MacOS, vb.
+.vscode/
+.DS_Store
+
+# Ortam dosyaları
+.env

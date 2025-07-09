@@ -8,11 +8,42 @@
         <div class="card">
             <div class="card-header">Giriş Yap</div>
             <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if unverified_user %}
+                <div class="alert alert-warning">
+                    Hesabınız henüz doğrulanmamış. Lütfen e-postanızı kontrol edin veya doğrulama linkini tekrar gönderin.
+                    <form action="{% url 'users:resend_verification_email' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="email" value="{{ unverified_user.email }}">
+                        <button type="submit" class="btn btn-link p-0 m-0 align-baseline">E-postayı Tekrar Gönder</button>
+                    </form>
+                </div>
+                {% endif %}
+
                 <form method="post">
                     {% csrf_token %}
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|capfirst }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary">Giriş Yap</button>
+                    <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
                 </form>
+                <div class="text-center mt-3">
+                    <a href="{% url 'users:password_reset' %}">Şifremi Unuttum</a>
+                </div>
             </div>
         </div>
     </div>

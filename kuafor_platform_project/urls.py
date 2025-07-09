@@ -17,6 +17,9 @@ urlpatterns = [
     path('contact/', include('contact.urls')),
     path('pages/', include('pages.urls')),
     path('education/', include('education.urls')),
+    path('notifications/', include('notifications.urls')),
+    path('messaging/', include('messaging.urls', namespace='messaging')),
+    path('accounts/', include('django.contrib.auth.urls')),
 ]
 
 if settings.DEBUG:

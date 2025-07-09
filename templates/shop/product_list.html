@@ -4,20 +4,43 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-12 col-md-3 mb-4 mb-md-0"> {# Added col-12 for mobile #}
-        <h4 class="mb-3">Kategoriler</h4>
+    <!-- Filtreleme Kolonu -->
+    <div class="col-md-3">
+        <h4 class="mb-3">Filtrele</h4>
+        <form method="get" action="{% if category %}{% url 'shop:product_list_by_category' category.slug %}{% else %}{% url 'shop:product_list' %}{% endif %}">
+            <div class="mb-3">
+                <label for="q" class="form-label">Ara</label>
+                <input type="text" name="q" id="q" class="form-control" value="{{ selected_q|default:'' }}" placeholder="Ürün adı, açıklama...">
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="min_price" class="form-label">Min Fiyat</label>
+                    <input type="number" name="min_price" id="min_price" class="form-control" value="{{ selected_min_price|default:'' }}" placeholder="₺ MIN">
+                </div>
+                <div class="col">
+                    <label for="max_price" class="form-label">Max Fiyat</label>
+                    <input type="number" name="max_price" id="max_price" class="form-control" value="{{ selected_max_price|default:'' }}" placeholder="₺ MAX">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+            <a href="{% if category %}{% url 'shop:product_list_by_category' category.slug %}{% else %}{% url 'shop:product_list' %}{% endif %}" class="btn btn-secondary w-100 mt-2">Temizle</a>
+        </form>
+
+        <h4 class="mt-4 mb-3">Kategoriler</h4>
         <div class="list-group">
-            <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action {% if not category %}active{% endif %}">Tüm Ürünler</a>
+            <a href="{% url 'shop:product_list' %}" class="list-group-item list-group-item-action {% if not category %}active{% endif %}">Tüm Ürünler</a>
             {% for cat in categories %}
-            <a href="{% url 'product_list_by_category' cat.slug %}" class="list-group-item list-group-item-action {% if category and category.slug == cat.slug %}active{% endif %}">{{ cat.name }}</a>
+            <a href="{% url 'shop:product_list_by_category' cat.slug %}" class="list-group-item list-group-item-action {% if category and category.slug == cat.slug %}active{% endif %}">{{ cat.name }}</a>
             {% endfor %}
         </div>
     </div>
-    <div class="col-12 col-md-9"> {# Added col-12 for mobile #}
+
+    <!-- Ürünler Listesi Kolonu -->
+    <div class="col-md-9">
         <h1>{% if category %}{{ category.name }} Kategorisindeki Ürünler{% else %}Tüm Ürünler{% endif %}</h1>
         <div class="row">
             {% for product in products %}
-            <div class="col-6 col-sm-4 col-md-4 mb-4"> {# Adjusted for smaller screens #}
+            <div class="col-6 col-sm-4 col-md-4 mb-4">
                 <div class="card h-100">
                     {% if product.image %}
                     <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
@@ -26,12 +49,14 @@
                         <h5 class="card-title">{{ product.name }}</h5>
                         <p class="card-text">{{ product.description|truncatechars:100 }}</p>
                         <p class="card-text"><strong>Fiyat:</strong> ₺{{ product.price }}</p>
-                        <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
+                        <a href="{% url 'shop:product_detail' product.pk %}" class="btn btn-primary mt-auto">Detayları Gör</a>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <p>Henüz hiç ürün bulunmamaktadır.</p>
+            <div class="alert alert-info" role="alert">
+                Seçtiğiniz kriterlere uygun ürün bulunamadı.
+            </div>
             {% endfor %}
         </div>
     </div>

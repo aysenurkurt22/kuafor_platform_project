@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Fatura - Sipariş #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Fatura - Sipariş #{{ order.id }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Fatura Bilgileri</h5>
+                    <p><strong>Sipariş Numarası:</strong> {{ order.id }}</p>
+                    <p><strong>Sipariş Tarihi:</strong> {{ order.order_date|date:"d M Y H:i" }}</p>
+                    <p><strong>Müşteri:</strong> {{ order.customer.get_full_name|default:order.customer.username }}</p>
+                    <p><strong>E-posta:</strong> {{ order.customer.email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Teslimat Adresi</h5>
+                    <p>{{ order.shipping_address|linebreaksbr }}</p>
+                </div>
+            </div>
+
+            <h5 class="mt-4">Sipariş Detayları</h5>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Ürün Adı</th>
+                        <th>Adet</th>
+                        <th>Birim Fiyat</th>
+                        <th>Toplam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td>{{ item.product.name|default:item.subscription_product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>₺{{ item.price|floatformat:2 }}</td>
+                        <td>₺{{ item.get_total_price|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-right">Genel Toplam:</th>
+                        <th>₺{{ order.total_amount|floatformat:2 }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="text-center mt-4">
+                <p>Bu bir otomatik oluşturulmuş faturadır. İmza gerektirmez.</p>
+                <a href="{% url 'shop:order_history' %}" class="btn btn-secondary">Sipariş Geçmişine Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

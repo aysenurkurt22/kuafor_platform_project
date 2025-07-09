@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Satıcı Ol{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>🛍️ Satıcı Özelliklerini Aktifleştir</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5>Satıcı olarak neler yapabilirsiniz?</h5>
+                        <ul class="mb-0">
+                            <li>✅ Sınırsız ürün satışı yapın</li>
+                            <li>✅ Kendi ürün galerinizi oluşturun</li>
+                            <li>✅ Siparişleri yönetin</li>
+                            <li>✅ Müşterilerle mesajlaşın</li>
+                            <li>✅ Satış raporlarınızı görün</li>
+                            <li>✅ Özel promosyonlar düzenleyin</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <h6>🎁 Satıcı Avantajları</h6>
+                        <p class="mb-0">Satıcı olduktan sonra <strong>%15 daha düşük komisyon</strong> oranından faydalanacaksınız!</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Opsiyonel işletme bilgileri -->
+                        <div class="mb-3">
+                            <label for="business_name" class="form-label">İşletme Adı (Opsiyonel)</label>
+                            <input type="text" class="form-control" id="business_name" name="business_name" 
+                                   placeholder="Örn: Güzellik Salonu ABC">
+                            <div class="form-text">Bu bilgi ürün sayfalarında görünecektir.</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✨ Satıcı Özelliklerini Aktifleştir
+                            </button>
+                            <a href="{% url 'users:user_dashboard' %}" class="btn btn-outline-secondary">
+                                İptal
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <strong>Not:</strong> Bu özellik tamamen ücretsizdir. İstediğiniz zaman dashboard'tan deaktif edebilirsiniz.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Rolleri Yönet{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>⚙️ Rollerinizi Yönetin</h4>
+                    <a href="{% url 'users:user_dashboard' %}" class="btn btn-outline-secondary">Dashboard'a Dön</a>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Aktif Roller -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>Aktif Rolleriniz</h5>
+                        </div>
+                        
+                        <!-- Müşteri Rolü -->
+                        {% if user.is_customer %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success">✅ Müşteri</h5>
+                                    <p class="card-text">Ürün satın alabilirsiniz</p>
+                                    <small class="text-muted">Bu rol kapatılamaz</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- İş Veren Rolü -->
+                        {% if user.is_employer %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-primary">✅ İş Veren</h5>
+                                    <p class="card-text">İş ilanı verebilirsiniz</p>
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="role" value="employer">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                onclick="return confirm('İş veren rolünüzü kapatmak istediğinizden emin misiniz?')">
+                                            Rolü Kapat
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Satıcı Rolü -->
+                        {% if user.is_seller %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-warning">✅ Satıcı</h5>
+                                    <p class="card-text">Ürün satabilirsiniz</p>
+                                    {% if user.business_name %}
+                                    <small class="text-muted d-block">{{ user.business_name }}</small>
+                                    {% endif %}
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="role" value="seller">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                onclick="return confirm('Satıcı rolünüzü kapatmak istediğinizden emin misiniz?')">
+                                            Rolü Kapat
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Kullanılabilir Roller -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>Aktifleştirebileceğiniz Roller</h5>
+                        </div>
+                        
+                        {% if not user.is_employer %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">🚀 İş Veren</h5>
+                                    <p class="card-text">İş ilanı verin, başvuruları değerlendirin</p>
+                                    <ul class="list-unstyled small text-muted">
+                                        <li>• Sınırsız iş ilanı</li>
+                                        <li>• 3 ücretsiz öne çıkarma kredisi</li>
+                                        <li>• Başvuru yönetimi</li>
+                                    </ul>
+                                    <a href="{% url 'users:upgrade_employer' %}" class="btn btn-outline-primary">
+                                        Aktifleştir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not user.is_seller %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">🛍️ Satıcı</h5>
+                                    <p class="card-text">Ürün satın, komisyon kazanın</p>
+                                    <ul class="list-unstyled small text-muted">
+                                        <li>• Sınırsız ürün satışı</li>
+                                        <li>• %15 düşük komisyon</li>
+                                        <li>• Satış raporları</li>
+                                    </ul>
+                                    <a href="{% url 'users:upgrade_seller' %}" class="btn btn-outline-success">
+                                        Aktifleştir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Bilgilendirme -->
+                    <div class="alert alert-info">
+                        <h6>📋 Rol Yönetimi Hakkında</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Müşteri rolü:</strong> Varsayılan olarak aktiftir ve kapatılamaz</li>
+                            <li><strong>İş veren/Satıcı rolleri:</strong> İstediğiniz zaman aktifleştirebilir veya kapatabilirsiniz</li>
+                            <li><strong>Veri kaybı:</strong> Rol kapattığınızda o role ait verileriniz silinmez, sadece erişiminiz kapanır</li>
+                            <li><strong>Tekrar aktifleştirme:</strong> Kapalı rolleri istediğiniz zaman tekrar aktifleştirebilirsiniz</li>
+                        </ul>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}{{ course.title }}{% endblock %}
 
@@ -24,27 +25,66 @@
                         {% if user.is_authenticated %}
                             {% if is_enrolled %}
                                 <p class="alert alert-success">Bu kursa kayıtlısınız.</p>
-                                <h5 class="mt-4">Dersler:</h5>
-                                <ul class="list-group mb-3">
-                                    {% for lesson in lessons %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <a href="{% url 'lesson_detail' course.pk lesson.pk %}">{{ lesson.order }}. {{ lesson.title }}</a>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
+                                <h3>{% trans "Kurs İçeriği" %}</h3>
+                {% if course.sections.all %}
+                    <div class="accordion" id="courseContentAccordion">
+                        {% for section in course.sections_cached %} {# Burayı değiştirin #}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ section.pk }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ section.pk }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ section.pk }}">
+                                    Bölüm {{ section.order }}: {{ section.title }}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ section.pk }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ section.pk }}" data-bs-parent="#courseContentAccordion">
+                                <div class="accordion-body">
+                                    <ul class="list-group">
+                                        {% for lesson in section.lessons_cached %} {# Burayı değiştirin #}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                {% if lesson.lesson_type == 'video' %}
+                                                    <i class="fas fa-video me-2"></i>
+                                                {% elif lesson.lesson_type == 'text' %}
+                                                    <i class="fas fa-file-alt me-2"></i>
+                                                {% elif lesson.lesson_type == 'quiz' %}
+                                                    <i class="fas fa-question-circle me-2"></i>
+                                                {% endif %}
+                                                Ders {{ lesson.order }}: {{ lesson.title }}
+                                                {# Tamamlandı işareti ekle #}
+                                                {% if is_enrolled %}
+                                                    {% if lesson.is_completed_by_user %} {# Görünümden gelen özniteliği kullan #}
+                                                        <i class="fas fa-check-circle text-success ms-2" title="{% trans 'Tamamlandı' %}"></i>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                            {% if is_enrolled %}
+                                                <a href="{% url 'education:lesson_detail' course_slug=course.slug course_pk=course.pk lesson_pk=lesson.pk %}" class="btn btn-sm btn-outline-primary">{% trans "Görüntüle" %}</a>
+                                            {% else %}
+                                                <span class="text-muted">{% trans "Kayıt Olun" %}</span>
+                                            {% endif %}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">{% trans "Bu kurs için henüz içerik eklenmemiştir." %}</div>
+                {% endif %}
                             {% else %}
-                                <form action="{% url 'enroll_course' course.pk %}" method="post">
+                                <form action="{% url 'education:enroll_course' slug=course.slug pk=course.pk %}" method="post">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-primary">Kursa Kayıt Ol</button>
                                 </form>
                             {% endif %}
                         {% else %}
                             <p class="alert alert-info">Dersleri görüntülemek için giriş yapmanız veya kayıt olmanız gerekmektedir.</p>
-                            <a href="{% url 'login' %}" class="btn btn-primary">Giriş Yap</a>
-                            <a href="{% url 'register' %}" class="btn btn-secondary">Kayıt Ol</a>
+                            <a href="{% url 'users:login' %}" class="btn btn-primary">Giriş Yap</a>
+                            <a href="{% url 'users:register' %}" class="btn btn-secondary">Kayıt Ol</a>
                         {% endif %}
 
-                        <a href="{% url 'course_list' %}" class="btn btn-secondary mt-3">Tüm Kurslar</a>
+                        <a href="{% url 'education:course_list' %}" class="btn btn-secondary mt-3">{% trans "Tüm Kurslar" %}</a>
                     </div>
                 </div>
             </div>

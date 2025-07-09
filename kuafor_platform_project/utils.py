@@ -1,6 +1,33 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from django.urls import reverse
+from django.template.loader import render_to_string
 from notifications.models import Notification # Notification import edildi
+
+def send_verification_email(request, user):
+    token = user.email_verification_token
+    subject = 'Hesabınızı Doğrulayın - Kuaför Kariyer Platformu'
+    verification_url = request.build_absolute_uri(
+        reverse('users:verify_email', kwargs={'token': token})
+    )
+    message = f"""
+    Merhaba {user.username},
+
+    Kuaför Kariyer Platformu'na kaydınızı tamamlamak için lütfen aşağıdaki linke tıklayın:
+    {verification_url}
+
+    Eğer bu isteği siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.
+
+    Saygılarımızla,
+    Kuaför Kariyer Ekibi
+    """
+    html_message = render_to_string('emails/verify_email.html', {
+        'username': user.username,
+        'verification_url': verification_url,
+    })
+    from_email = settings.EMAIL_HOST_USER if settings.EMAIL_HOST_USER else 'noreply@kuaforplatform.com'
+    send_mail(subject, message, from_email, [user.email], html_message=html_message, fail_silently=False)
+
 
 def send_welcome_email(user_email, username):
     subject = 'Kuaför Kariyer & E-Commerce Platformuna Hoş Geldiniz!'
